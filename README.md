@@ -1,121 +1,69 @@
-# 🏐 VoleiTactics - Volleyball Tactical & Theoretical Assessment Platform
+# 🏐 VoleiTactics - Plataforma de Evaluación Táctica y Teórica de Voleibol
 
-A comprehensive athletic evaluation and training assessment system for university volleyball programs and tactical coaches. Designed with an energetic sports red visual identity matching the Volleyball Canada / University athletics aesthetic.
-
-![Volleyball Tactics](https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=1200&q=80)
+VoleiTactics es una plataforma web interactiva diseñada para la formación, evaluación y aprendizaje táctico de jugadores y equipos de voleibol. Permite a los entrenadores evaluar la toma de decisiones y los conocimientos teóricos de sus atletas a través de situaciones reales de juego, videos y retroalimentación pedagógica inmediata.
 
 ---
 
-## 🌟 Key Features
+## 📋 ¿Qué hace la plataforma?
 
-1. **Dual Role Access Control**:
-   - **Administrators / Coaches**: Create tests, author multimedia questions (YouTube, MP4, images), view all athlete results, inspect question-by-question choices, and analyze topic mastery with circular pie/donut charts.
-   - **Athletes / Students**: Take interactive theoretical & video decision tests, receive customized pedagogical feedback for every option chosen, review results, and track skill improvement.
-2. **Pedagogical Option-Specific Feedback**:
-   - Every single answer choice stores customized instructional feedback. If an athlete selects an aggressive or suboptimal response, the system immediately provides a constructive explanation (e.g., explaining why aggressive conduct is penalized, or the tactical consequences of missing a block seam in K2).
-3. **Multimedia Questions**:
-   - Support for YouTube video embeds, MP4 video streams, high-resolution court diagrams, and rich scenario descriptions.
-4. **Circular Pie Analytics by Topic**:
-   - Categorizes athlete knowledge into competencies:
-     - *Táctica Ofensiva (K1: Recepción y Ataque)*
-     - *Táctica Defensiva (K2: Bloqueo, Defensa y Contraataque)*
-     - *Atención y Percepción Visual*
-     - *Toma de Decisiones en Cancha*
-     - *Reglamento y Ética Deportiva*
-5. **Modern Athletic UI**:
-   - Deep crimson/ruby red gradient theme matching the reference design.
-   - Layered organic wave curves, dot grid patterns, pill-shaped inputs, and custom **Volleyball Charging/Bounce animations**.
-6. **Authentication**:
-   - Google Sign-In (OAuth 2.0) with `@react-oauth/google` and backend verification.
-   - Standard email/password registration and login with JWT.
-   - 1-Click Demo switchers for instant evaluation.
+### 👨‍🏫 Para Entrenadores y Administradores
+- **Crear y administrar preguntas:** Preguntas con situaciones de juego, imágenes de cancha o videos de YouTube.
+- **Diseñar evaluaciones completas:** Configurar tiempo límite, puntaje mínimo y fases tácticas.
+- **Monitoreo de resultados:** Ver las respuestas exactas de cada atleta, el tiempo que tardó y su porcentaje de acierto.
+- **Gráficos de rendimiento:** Visualizar en gráficas circulares qué temas domina el equipo y en cuáles necesita reforzar.
+- **Exportación de datos:** Descargar informes en formato CSV/Excel para el seguimiento del equipo.
+
+### 🏃 Para Atletas y Estudiantes
+- **Evaluaciones interactivas:** Resolver pruebas teóricas y analizar jugadas en video.
+- **Retroalimentación inmediata:** Cada opción explica de forma pedagógica por qué una decisión es adecuada o qué consecuencias tácticas tendría en un partido real.
+- **Historial de progreso:** Consultar calificaciones pasadas y ver el crecimiento en cada área.
+- **Instalable (PWA):** Se puede instalar directamente en el celular o computador para usarla como una aplicación nativa.
 
 ---
 
-## 🗄️ Monorepo Architecture
+## 🎯 Áreas Tácticas que se Evalúan
 
-```
-volleyball-tactics-platform/
-├── client/           # Vite + React + Tailwind CSS + Lucide Icons + Recharts
-├── server/           # Express.js + Prisma ORM + JWT + PostgreSQL (Neon ready)
-├── package.json      # Monorepo root scripts
-├── render.yaml       # Blueprint for 1-click Render deployment
-└── .env.example      # Environment variables template
-```
+1. **Táctica Ofensiva (Fase K1):** Recepción del saque, colocación y definición del ataque.
+2. **Táctica Defensiva (Fase K2):** Saque propio, bloqueo en la red, defensa de campo y contraataque.
+3. **Atención y Percepción Visual:** Lectura de trayectorias de balón y señales corporales del rival.
+4. **Toma de Decisiones en Cancha:** Elección de la mejor jugada bajo presión y con el tiempo justo.
+5. **Ética Deportiva y Convivencia:** Respeto a las decisiones arbitrales, juego limpio y trabajo en equipo.
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 🔑 Usuarios de Prueba
 
-### 1. Install Dependencies
+Para probar la plataforma rápidamente, puedes usar las siguientes credenciales o hacer clic en los botones de acceso directo en la pantalla de inicio:
+
+| Rol | Correo Electrónico | Contraseña |
+| :--- | :--- | :--- |
+| **Entrenador (Admin)** | `admin@volleyball.edu` | `Admin123!` |
+| **Atleta (Estudiante)** | `athlete@volleyball.edu` | `User123!` |
+
+---
+
+## 💻 Cómo Ejecutar el Proyecto Localmente
+
+### 1. Instalar las dependencias
+Desde la carpeta principal del proyecto:
 ```bash
 npm install
-cd client && npm install
-cd ../server && npm install
 ```
+*(Este comando instalará automáticamente todo lo necesario para el servidor y la interfaz).*
 
-### 2. Configure Environment
-Copy `.env.example` to `server/.env`:
-```bash
-cp .env.example server/.env
-```
-*(If you do not have a Neon PostgreSQL database ready yet, the backend automatically supports local SQLite / fallback mode so you can run and test instantly!)*
-
-### 3. Initialize Database & Seed
-```bash
-cd server
-npm run prisma:push
-npm run prisma:seed
-```
-
-### 4. Run Development Servers
-From the root directory:
+### 2. Iniciar la aplicación
 ```bash
 npm run dev
 ```
-- Frontend will be available at: `http://localhost:5173`
-- Backend API will be available at: `http://localhost:5000`
+
+### 3. Abrir en el navegador
+- **Aplicación web:** `http://localhost:5173`
+- **Servidor API:** `http://localhost:5000`
 
 ---
 
-## 🔑 Pre-Seeded Demo Accounts
+## ☁️ Despliegue en la Nube
 
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Admin / Head Coach** | `admin@volleyball.edu` | `Admin123!` |
-| **Athlete / User** | `athlete@volleyball.edu` | `User123!` |
-
-*(You can also use the 1-click demo buttons on the login screen or sign in with Google!)*
-
----
-
-## 🌐 Deploying to Neon & Render
-
-### Step 1: Create a Database on Neon
-1. Go to [Neon.tech](https://neon.tech) and create a free PostgreSQL project (e.g., `volleyball-tactics-db`).
-2. In your Neon dashboard, copy the **Connection String** (`postgresql://...`). Make sure it includes `?sslmode=require`.
-
-### Step 2: Push Monorepo to GitHub
-```bash
-git init
-git add .
-git commit -m "Initial commit of Volleyball Tactics Assessment Platform"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/volleyball-tactics-platform.git
-git push -u origin main
-```
-
-### Step 3: Deploy on Render
-1. Go to [Render Dashboard](https://dashboard.render.com).
-2. Click **New +** -> **Web Service** (or **Blueprint** using `render.yaml`).
-3. Connect your GitHub repository.
-4. Set the following settings:
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-5. Add Environment Variables:
-   - `DATABASE_URL`: *(Your Neon PostgreSQL connection string)*
-   - `JWT_SECRET`: *(A secure random string, e.g. `n8b6v5c4x3z2a1`)*
-   - `NODE_ENV`: `production`
-   - `GOOGLE_CLIENT_ID`: *(Your Google OAuth client ID, optional)*
-6. Click **Create Web Service**. Render will automatically build the React frontend and deploy the Express API.
+La plataforma está optimizada para desplegarse fácilmente:
+- **Base de Datos:** PostgreSQL en la nube con **Neon**.
+- **Hospedaje Web:** **Render** (ejecutando la API de Node.js y la aplicación React en un solo servicio).
