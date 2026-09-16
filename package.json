@@ -8,10 +8,13 @@
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "build": "npm run build --prefix client && npm run build --prefix server",
+    "postinstall": "npm install --prefix client && npm install --prefix server && npm run prisma:generate --prefix server",
     "start": "node server/dist/index.js",
     "prisma:generate": "npm run prisma:generate --prefix server",
     "prisma:push": "npm run prisma:push --prefix server",
-    "prisma:seed": "npm run prisma:seed --prefix server"
+    "prisma:seed": "npm run prisma:seed --prefix server",
+    "db:push": "npm run prisma:push --prefix server",
+    "db:seed": "npm run prisma:seed --prefix server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

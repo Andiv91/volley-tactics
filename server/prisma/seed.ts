@@ -26,7 +26,7 @@ async function main() {
       name: 'Director Técnico Morales',
       password: adminPassword,
       role: 'ADMIN',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: '/icons/icondefault.png',
     },
   });
 
@@ -36,7 +36,7 @@ async function main() {
       name: 'Camila Ortiz (Punta Receptora)',
       password: userPassword,
       role: 'USER',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: '/icons/icondefault.png',
     },
   });
 
@@ -46,7 +46,7 @@ async function main() {
       name: 'Mateo Silva (Bloqueador Central)',
       password: userPassword,
       role: 'USER',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: '/icons/icondefault.png',
     },
   });
 
