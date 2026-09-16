@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: volleyball-tactics-platform
+    name: volley-tactics
     runtime: node
     plan: free
-    region: oregon
+    region: ohio
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
