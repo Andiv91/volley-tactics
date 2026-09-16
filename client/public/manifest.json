@@ -1,0 +1,32 @@
+{
+  "name": "VoleiTactics - Evaluación y Táctica de Voleibol",
+  "short_name": "VoleiTactics",
+  "description": "Plataforma de evaluación táctica, toma de decisiones y entrenamiento de voleibol de la Universidad",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#7f1325",
+  "theme_color": "#7f1325",
+  "categories": ["sports", "education"],
+  "icons": [
+    {
+      "src": "/icons/volleyball-ball-free-svg-file.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/volleyball-ball-free-svg-file.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/ufps.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

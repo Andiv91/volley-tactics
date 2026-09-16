@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: volleyball-tactics-platform
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Set in Render Dashboard with your Neon PostgreSQL connection string
+      - key: GOOGLE_CLIENT_ID
+        sync: false

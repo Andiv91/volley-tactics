@@ -1,0 +1,126 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String?
+  name        String
+  role        String       @default("USER") // "ADMIN" | "USER"
+  avatarUrl   String?
+  googleId    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submissions Submission[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  color       String     @default("#e11d48")
+  icon        String     @default("Shield")
+  questions   Question[]
+
+  @@map("categories")
+}
+
+model Question {
+  id                String             @id @default(uuid())
+  categoryId        String
+  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title             String
+  context           String?
+  difficulty        String             @default("INTERMEDIO") // "PRINCIPIANTE" | "INTERMEDIO" | "AVANZADO"
+  phase             String             @default("TEORICO") // "TEORICO" | "DECISION_VIDEO" | "POST_PARTIDO"
+  imageUrl          String?
+  videoUrl          String?
+  options           QuestionOption[]
+  testQuestions     TestQuestion[]
+  submissionAnswers SubmissionAnswer[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id                String             @id @default(uuid())
+  questionId        String
+  question          Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text              String
+  isCorrect         Boolean            @default(false)
+  feedbackMessage   String // Pedagogical feedback explaining why this option is right/wrong/tactically sound
+  scoreValue        Int                @default(1)
+  submissionAnswers SubmissionAnswer[]
+
+  @@map("question_options")
+}
+
+model Test {
+  id              String         @id @default(uuid())
+  title           String
+  description     String?
+  phase           String         @default("TEORICO") // "TEORICO" | "DECISION_VIDEO" | "INTEGRAL"
+  durationMinutes Int            @default(20)
+  passingScore    Int            @default(70)
+  isActive        Boolean        @default(true)
+  testQuestions   TestQuestion[]
+  submissions     Submission[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("tests")
+}
+
+model TestQuestion {
+  id         String   @id @default(uuid())
+  testId     String
+  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  orderIndex Int      @default(0)
+
+  @@unique([testId, questionId])
+  @@map("test_questions")
+}
+
+model Submission {
+  id               String             @id @default(uuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId           String
+  test             Test               @relation(fields: [testId], references: [id], onDelete: Cascade)
+  score            Float
+  maxScore         Float
+  percentage       Float
+  passed           Boolean
+  timeSpentSeconds Int                @default(0)
+  answers          SubmissionAnswer[]
+  createdAt        DateTime           @default(now())
+
+  @@map("submissions")
+}
+
+model SubmissionAnswer {
+  id               String         @id @default(uuid())
+  submissionId     String
+  submission       Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionId String
+  selectedOption   QuestionOption @relation(fields: [selectedOptionId], references: [id], onDelete: Cascade)
+  isCorrect        Boolean
+  feedbackGiven    String
+  categoryName     String
+
+  @@map("submission_answers")
+}

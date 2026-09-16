@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/icons/volleyball-ball-free-svg-file.png" />
+    <link rel="apple-touch-icon" href="/icons/volleyball-ball-free-svg-file.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#7f1325" />
+    <meta name="description" content="VoleiTactics - Plataforma Universitaria de Evaluación Táctica y Toma de Decisiones" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VoleiTactics" />
+    <title>VoleiTactics | Sistema de Evaluación Táctica y Toma de Decisiones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-stone-900 text-stone-100 font-sans antialiased selection:bg-rose-600 selection:text-white min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Auto-recovery from stale Service Worker caches or outdated script hashes
+      window.addEventListener('error', function (e) {
+        if (e && e.message && (
+          e.message.includes('Unexpected token') || 
+          e.message.includes('dynamically imported') || 
+          e.message.includes('Loading chunk') ||
+          e.message.includes('Failed to fetch')
+        )) {
+          console.warn('Detectada discrepancia de caché. Actualizando caché y recargando...');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              for (var reg of registrations) { reg.unregister(); }
+              caches.keys().then(function (names) {
+                for (var name of names) { caches.delete(name); }
+                window.location.reload();
+              });
+            });
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            reg.update();
+          }).catch((err) => {
+            console.log('SW registration error:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
