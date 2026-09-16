@@ -1,69 +1,69 @@
-# 🏐 VoleiTactics - Plataforma de Evaluación Táctica y Teórica de Voleibol
+﻿# VoleiTactics - Plataforma de Evaluación Táctica y Teórica de Voleibol
 
-VoleiTactics es una plataforma web interactiva diseñada para la formación, evaluación y aprendizaje táctico de jugadores y equipos de voleibol. Permite a los entrenadores evaluar la toma de decisiones y los conocimientos teóricos de sus atletas a través de situaciones reales de juego, videos y retroalimentación pedagógica inmediata.
-
----
-
-## 📋 ¿Qué hace la plataforma?
-
-### 👨‍🏫 Para Entrenadores y Administradores
-- **Crear y administrar preguntas:** Preguntas con situaciones de juego, imágenes de cancha o videos de YouTube.
-- **Diseñar evaluaciones completas:** Configurar tiempo límite, puntaje mínimo y fases tácticas.
-- **Monitoreo de resultados:** Ver las respuestas exactas de cada atleta, el tiempo que tardó y su porcentaje de acierto.
-- **Gráficos de rendimiento:** Visualizar en gráficas circulares qué temas domina el equipo y en cuáles necesita reforzar.
-- **Exportación de datos:** Descargar informes en formato CSV/Excel para el seguimiento del equipo.
-
-### 🏃 Para Atletas y Estudiantes
-- **Evaluaciones interactivas:** Resolver pruebas teóricas y analizar jugadas en video.
-- **Retroalimentación inmediata:** Cada opción explica de forma pedagógica por qué una decisión es adecuada o qué consecuencias tácticas tendría en un partido real.
-- **Historial de progreso:** Consultar calificaciones pasadas y ver el crecimiento en cada área.
-- **Instalable (PWA):** Se puede instalar directamente en el celular o computador para usarla como una aplicación nativa.
+VoleiTactics es una plataforma web orientada a la formación, evaluación y análisis táctico de jugadores y equipos de voleibol. El sistema vincula el aprendizaje teórico con la toma de decisiones en cancha a través de situaciones reales de juego, material audiovisual y retroalimentación pedagógica inmediata.
 
 ---
 
-## 🎯 Áreas Tácticas que se Evalúan
+## Qué Hace la Plataforma
 
-1. **Táctica Ofensiva (Fase K1):** Recepción del saque, colocación y definición del ataque.
-2. **Táctica Defensiva (Fase K2):** Saque propio, bloqueo en la red, defensa de campo y contraataque.
-3. **Atención y Percepción Visual:** Lectura de trayectorias de balón y señales corporales del rival.
-4. **Toma de Decisiones en Cancha:** Elección de la mejor jugada bajo presión y con el tiempo justo.
-5. **Ética Deportiva y Convivencia:** Respeto a las decisiones arbitrales, juego limpio y trabajo en equipo.
-
----
-
-## 🔑 Usuarios de Prueba
-
-Para probar la plataforma rápidamente, puedes usar las siguientes credenciales o hacer clic en los botones de acceso directo en la pantalla de inicio:
-
-| Rol | Correo Electrónico | Contraseña |
-| :--- | :--- | :--- |
-| **Entrenador (Admin)** | `admin@volleyball.edu` | `Admin123!` |
-| **Atleta (Estudiante)** | `athlete@volleyball.edu` | `User123!` |
+La plataforma digitaliza y optimiza el entrenamiento teórico y táctico en el voleibol:
+- Presenta situaciones de juego apoyadas en video, esquemas de cancha y casos prácticos de estudio.
+- Evalúa el criterio y la capacidad de lectura del atleta ante escenarios de juego (fases ofensivas K1, defensivas K2, percepción visual y ética deportiva).
+- Entrega retroalimentación pedagógica inmediata detallando las razones técnicas y tácticas de cada respuesta seleccionada.
+- Centraliza el seguimiento del rendimiento individual y de equipo mediante gráficos de dominio por competencia.
+- Funciona como Aplicación Web Progresiva (PWA), permitiendo su instalación directa en teléfonos móviles, tabletas y computadores.
 
 ---
 
-## 💻 Cómo Ejecutar el Proyecto Localmente
+## Cómo Funciona el Sistema
 
-### 1. Instalar las dependencias
-Desde la carpeta principal del proyecto:
-```bash
-npm install
-```
-*(Este comando instalará automáticamente todo lo necesario para el servidor y la interfaz).*
-
-### 2. Iniciar la aplicación
-```bash
-npm run dev
-```
-
-### 3. Abrir en el navegador
-- **Aplicación web:** `http://localhost:5173`
-- **Servidor API:** `http://localhost:5000`
+1. **Configuración de contenidos:** El cuerpo técnico crea las categorías temáticas, registra el banco de preguntas con sus opciones y justificaciones tácticas, y conforma las evaluaciones estableciendo tiempos y criterios de aprobación.
+2. **Desarrollo de la evaluación:** El atleta ingresa a la plataforma, selecciona la evaluación asignada y analiza cada situación de juego para tomar la decisión correspondiente.
+3. **Análisis y retroalimentación formativa:** Al marcar una opción, la plataforma explica las consecuencias prácticas de esa decisión en un partido real, convirtiendo la prueba en una herramienta continua de aprendizaje.
+4. **Consolidación de resultados:** El sistema almacena y procesa los datos para generar métricas que permitan al entrenador identificar fortalezas y aspectos a corregir.
 
 ---
 
-## ☁️ Despliegue en la Nube
+## Qué Puede Hacer Cada Usuario
 
-La plataforma está optimizada para desplegarse fácilmente:
-- **Base de Datos:** PostgreSQL en la nube con **Neon**.
-- **Hospedaje Web:** **Render** (ejecutando la API de Node.js y la aplicación React en un solo servicio).
+### Entrenador y Administrador
+- Administrar el banco de preguntas con soporte para videos de jugadas, diagramas e imágenes explicativas.
+- Diseñar y publicar evaluaciones asignando duración límite, porcentaje mínimo de aprobación y temáticas específicas.
+- Consultar el historial detallado de respuestas de cada atleta, incluyendo el tiempo empleado por intento.
+- Visualizar métricas globales y por área táctica a través de gráficos circulares de rendimiento.
+- Exportar reportes consolidados en formato de hoja de cálculo (CSV/Excel).
+
+### Atleta y Estudiante
+- Desarrollar evaluaciones teóricas y de resolución de jugadas en video de manera interactiva.
+- Recibir retroalimentación inmediata y constructiva sobre las decisiones tomadas en cada reactivo.
+- Revisar su historial de rendimiento, calificaciones obtenidas y evolución por área táctica.
+- Acceder cómodamente desde cualquier dispositivo gracias a su interfaz adaptable y su formato instalable (PWA).
+
+---
+
+## Cómo se Hizo (Tecnologías y Arquitectura)
+
+El proyecto fue estructurado bajo una arquitectura monorepositorio que integra de forma eficiente la interfaz de usuario y el servidor de servicios:
+
+### Frontend (Cliente)
+- **React 18 y TypeScript:** Creación de componentes declarativos, modulares y con tipado estático riguroso.
+- **Vite:** Empaquetador y entorno de desarrollo optimizado para un alto rendimiento en compilación y carga.
+- **Tailwind CSS:** Diseño visual responsivo, limpio y adaptado a la identidad deportiva.
+- **Recharts:** Representación gráfica interactiva para el análisis visual del rendimiento deportivo.
+- **Lucide React:** Iconografía funcional para la navegación y señalización de áreas tácticas.
+- **Service Worker (PWA):** Soporte para instalación como aplicación y gestión de caché de recursos estáticos.
+
+### Backend (Servidor)
+- **Node.js y Express:** Construcción de la API REST encargada de la lógica de negocio y el control de accesos.
+- **TypeScript:** Estandarización de modelos y control de flujo de datos en el servidor.
+- **Prisma ORM:** Modelado de entidades relacionales, gestión de esquemas y conexión con base de datos.
+- **Seguridad:** Autenticación mediante JSON Web Tokens (JWT) y cifrado unidireccional de contraseñas con bcryptjs.
+- **Persistencia Resiliente:** Capa de datos dual con soporte nativo para bases de datos relacionales y almacenamiento local de contingencia.
+
+---
+
+## Despliegue en la Nube
+
+El sistema se encuentra configurado para su publicación en infraestructura de nube moderna:
+- **Base de Datos:** PostgreSQL en la nube mediante Neon, garantizando almacenamiento relacional seguro y escalable.
+- **Alojamiento Web:** Render como Servicio Web unificado, sirviendo conjuntamente la API y la aplicación compilada bajo protocolo HTTPS.
