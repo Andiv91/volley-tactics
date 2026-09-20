@@ -12,6 +12,8 @@ interface AuthContextType {
   logout: () => void;
   quickLoginDemo: (role: 'ADMIN' | 'USER') => Promise<void>;
   updateAvatar: (avatarUrl: string) => Promise<void>;
+  updateUser: (u: User) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,6 +98,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(res.user);
   };
 
+  const refreshUser = async () => {
+    try {
+      const { user: fetchedUser } = await api.getMe();
+      setUser(fetchedUser);
+    } catch (err) {
+      console.warn('Error refrescando usuario:', err);
+    }
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -108,6 +123,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         quickLoginDemo,
         updateAvatar,
+        updateUser,
+        refreshUser,
       }}
     >
       {children}

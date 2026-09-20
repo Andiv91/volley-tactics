@@ -1,11 +1,35 @@
 export type UserRole = 'ADMIN' | 'USER';
 
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  memberCount?: number;
+  members?: User[];
+  stats?: {
+    totalEvaluations: number;
+    averagePercentage: number;
+    totalScore?: number;
+    totalMaxScore?: number;
+    performanceLevel: PerformanceLevel;
+    levelDistribution: {
+      principiante: number;
+      competente: number;
+      profesional: number;
+    };
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
   avatarUrl?: string;
+  teamId?: string | null;
+  team?: Team | null;
   createdAt?: string;
 }
 
@@ -115,6 +139,11 @@ export interface Submission {
     name: string;
     email: string;
     avatarUrl?: string;
+    teamId?: string | null;
+    team?: {
+      id: string;
+      name: string;
+    } | null;
   };
   test?: {
     id: string;
@@ -163,5 +192,21 @@ export interface AnalyticsData {
   circularPieData: CircularPieSlice[];
   difficultyBreakdown: DifficultyStat[];
   userSummaries: UserSummaryItem[];
+  teams?: Team[];
   selectedUserId: string | null;
+  selectedTeamId?: string | null;
+  teamStats?: {
+    teamId: string;
+    teamName: string;
+    description?: string;
+    memberCount: number;
+    totalEvaluations: number;
+    averagePercentage: number;
+    performanceLevel: PerformanceLevel;
+    levelDistribution: {
+      principiante: number;
+      competente: number;
+      profesional: number;
+    };
+  } | null;
 }

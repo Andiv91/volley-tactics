@@ -43,6 +43,16 @@ export interface UserEntity {
   role: 'ADMIN' | 'USER';
   avatarUrl?: string | null;
   googleId?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamEntity {
+  id: string;
+  name: string;
+  description?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -144,6 +154,7 @@ export const memoryDb = {
       name: 'Camila Ortiz (Punta Receptora)',
       role: 'USER',
       avatarUrl: '/icons/icondefault.png',
+      teamId: 'team-fem-a',
       createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -154,6 +165,7 @@ export const memoryDb = {
       name: 'Mateo Silva (Bloqueador Central)',
       role: 'USER',
       avatarUrl: '/icons/icondefault.png',
+      teamId: 'team-masc-a',
       createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -164,10 +176,35 @@ export const memoryDb = {
       name: 'Valeria Gómez (Líbero)',
       role: 'USER',
       avatarUrl: '/icons/icondefault.png',
+      teamId: 'team-fem-a',
       createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
       updatedAt: new Date().toISOString(),
     },
   ] as UserEntity[],
+
+  teams: [
+    {
+      id: 'team-fem-a',
+      name: 'Selección Femenina A',
+      description: 'Equipo titular representativo universitario femenino',
+      createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'team-masc-a',
+      name: 'Selección Masculina A',
+      description: 'Equipo titular de alta competencia masculino',
+      createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'team-juv-1',
+      name: 'Equipo Juvenil Formativo',
+      description: 'Semillero táctico universitario mixto',
+      createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ] as TeamEntity[],
 
   categories: [
     {
@@ -586,6 +623,9 @@ export function loadStore() {
         memoryDb.questions = data.questions;
         memoryDb.tests = data.tests;
         memoryDb.submissions = data.submissions;
+        if (data.teams && Array.isArray(data.teams)) {
+          memoryDb.teams = data.teams;
+        }
         console.log('✅ Datos persistentes cargados correctamente desde server/data/store.json');
         return;
       }

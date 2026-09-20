@@ -181,7 +181,7 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
     if (!user) return res.status(401).json({ message: 'No autenticado' });
 
     const isAdmin = user.role === 'ADMIN';
-    const { userId: filterUserId, testId } = req.query;
+    const { userId: filterUserId, testId, teamId } = req.query;
 
     if (isPrismaAvailable && prisma) {
       const where: any = {};
@@ -191,6 +191,9 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
         where.userId = String(filterUserId);
       }
       if (testId) where.testId = String(testId);
+      if (teamId) {
+        where.user = { teamId: String(teamId) };
+      }
 
       const submissions = await prisma.submission.findMany({
         where,
@@ -206,7 +209,16 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
             },
           },
           user: {
-            select: { id: true, name: true, email: true, avatarUrl: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+              teamId: true,
+              team: {
+                select: { id: true, name: true },
+              },
+            },
           },
           _count: {
             select: { answers: true },
@@ -241,10 +253,17 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
       if (testId) {
         list = list.filter(s => s.testId === testId);
       }
+      if (teamId) {
+        list = list.filter(s => {
+          const u = memoryDb.users.find(item => item.id === s.userId);
+          return u?.teamId === teamId;
+        });
+      }
 
       const formatted = list.map(s => {
         const u = memoryDb.users.find(item => item.id === s.userId);
         const t = memoryDb.tests.find(item => item.id === s.testId);
+        const team = (memoryDb.teams || []).find(tm => tm.id === u?.teamId);
         const comp = t?.competentThreshold ?? 60;
         const prof = t?.professionalThreshold ?? 85;
         let level = s.performanceLevel;
@@ -270,6 +289,8 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
             name: u?.name || s.userName || 'Atleta',
             email: u?.email || s.userEmail || '',
             avatarUrl: u?.avatarUrl,
+            teamId: u?.teamId || null,
+            team: team ? { id: team.id, name: team.name } : null,
           },
           test: {
             id: t?.id || s.testId,
@@ -307,7 +328,14 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
         include: {
           test: true,
           user: {
-            select: { id: true, name: true, email: true, avatarUrl: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+              teamId: true,
+              team: { select: { id: true, name: true } },
+            },
           },
           answers: {
             include: {
@@ -386,6 +414,11 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
             name: u?.name || submission.userName,
             email: u?.email || submission.userEmail,
             avatarUrl: u?.avatarUrl,
+            teamId: u?.teamId || null,
+            team: (() => {
+              const tm = (memoryDb.teams || []).find(t => t.id === u?.teamId);
+              return tm ? { id: tm.id, name: tm.name } : null;
+            })(),
           },
           test: t || { id: submission.testId, title: submission.testTitle },
           answers: enrichedAnswers,

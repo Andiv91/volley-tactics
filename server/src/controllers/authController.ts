@@ -18,9 +18,16 @@ export const login = async (req: Request, res: Response) => {
     let user: any = null;
 
     if (isPrismaAvailable && prisma) {
-      user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+      user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        include: { team: true },
+      });
     } else {
-      user = memoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      const rawUser = memoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (rawUser) {
+        const team = (memoryDb.teams || []).find(t => t.id === rawUser.teamId);
+        user = { ...rawUser, team: team || null };
+      }
     }
 
     if (!user || !user.password) {
@@ -247,9 +254,32 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 
     let user: any = null;
     if (isPrismaAvailable && prisma) {
-      user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        include: {
+          team: {
+            include: {
+              members: {
+                select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+              },
+            },
+          },
+        },
+      });
     } else {
-      user = memoryDb.users.find(u => u.id === req.user?.id);
+      const raw = memoryDb.users.find(u => u.id === req.user?.id);
+      if (raw) {
+        const team = (memoryDb.teams || []).find(t => t.id === raw.teamId);
+        const members = team
+          ? (memoryDb.users || [])
+              .filter(u => u.teamId === team.id)
+              .map(({ password: _, ...u }) => u)
+          : [];
+        user = {
+          ...raw,
+          team: team ? { ...team, members, memberCount: members.length } : null,
+        };
+      }
     }
 
     if (!user) {
@@ -287,6 +317,7 @@ export const updateAvatar = async (req: AuthRequest, res: Response) => {
       updatedUser = await prisma.user.update({
         where: { id: req.user.id },
         data: { avatarUrl },
+        include: { team: true },
       });
     } else {
       const user = memoryDb.users.find(u => u.id === req.user?.id);
@@ -296,7 +327,8 @@ export const updateAvatar = async (req: AuthRequest, res: Response) => {
       user.avatarUrl = avatarUrl;
       user.updatedAt = new Date().toISOString();
       saveStore();
-      updatedUser = user;
+      const team = (memoryDb.teams || []).find(t => t.id === user.teamId);
+      updatedUser = { ...user, team: team || null };
     }
 
     const { password: _, ...userWithoutPassword } = updatedUser;
@@ -320,13 +352,23 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
           name: true,
           role: true,
           avatarUrl: true,
+          teamId: true,
+          team: {
+            select: { id: true, name: true },
+          },
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
       });
       return res.json({ users });
     } else {
-      const users = memoryDb.users.map(({ password: _, ...u }) => u);
+      const users = memoryDb.users.map(({ password: _, ...u }) => {
+        const team = (memoryDb.teams || []).find(t => t.id === u.teamId);
+        return {
+          ...u,
+          team: team ? { id: team.id, name: team.name } : null,
+        };
+      });
       return res.json({ users });
     }
   } catch (error) {

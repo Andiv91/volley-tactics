@@ -11,6 +11,7 @@ import questionRoutes from './routes/questionRoutes';
 import testRoutes from './routes/testRoutes';
 import submissionRoutes from './routes/submissionRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import teamRoutes from './routes/teamRoutes';
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/tests', testRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/teams', teamRoutes);
 
 // In Production (Render), serve client build
 const clientDistPath = path.resolve(__dirname, '../../client/dist');

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { AnalyticsData, User } from '../../types';
+import { AnalyticsData, User, Team } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
 import { TopicPieChart } from '../../components/charts/TopicPieChart';
+import { PerformanceBadge } from '../../components/ui/PerformanceBadge';
 import {
   PieChart as PieChartIcon,
   User as UserIcon,
@@ -10,24 +11,36 @@ import {
   Award,
   BarChart2,
   Filter,
+  Search,
   CheckCircle,
   HelpCircle,
+  ShieldCheck,
+  X,
 } from 'lucide-react';
 
 export const AnalyticsPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
-  const loadData = async (userIdFilter?: string) => {
+  const loadData = async (userIdFilter?: string, teamIdFilter?: string) => {
     try {
-      const [analyticsRes, usersRes] = await Promise.all([
-        api.getAnalytics(userIdFilter || undefined),
+      setLoading(true);
+      const [analyticsRes, usersRes, teamsRes] = await Promise.all([
+        api.getAnalytics({
+          userId: userIdFilter || undefined,
+          teamId: teamIdFilter || undefined,
+        }),
         api.getAllUsers(),
+        api.getTeams(),
       ]);
       setAnalytics(analyticsRes);
       setUsers(usersRes.users || []);
+      setTeams(teamsRes.teams || []);
     } catch (err) {
       console.error('Error cargando analíticas:', err);
     } finally {
@@ -36,51 +49,156 @@ export const AnalyticsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData(selectedUserId);
-  }, [selectedUserId]);
+    loadData(selectedUserId, selectedTeamId);
+  }, [selectedUserId, selectedTeamId]);
 
-  if (loading || !analytics) {
+  if (loading && !analytics) {
     return <VolleyballLoader text="Calculando gráficos circulares por categorías..." />;
   }
 
   const selectedAthlete = users.find((u) => u.id === selectedUserId);
+  const selectedTeam = teams.find((t) => t.id === selectedTeamId);
+
+  // Filtrar atletas según búsqueda o equipo seleccionado
+  const eligibleUsers = users.filter((u) => {
+    if (selectedTeamId && u.teamId !== selectedTeamId && (u.team as any)?.id !== selectedTeamId) {
+      return false;
+    }
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const nameMatch = u.name.toLowerCase().includes(q);
+    const emailMatch = u.email.toLowerCase().includes(q);
+    const teamMatch = u.team?.name?.toLowerCase().includes(q);
+    return nameMatch || emailMatch || teamMatch;
+  });
+
+  // Filtrar user summaries en la barra lateral
+  const filteredUserSummaries = (analytics?.userSummaries || []).filter((u) => {
+    const fullUser = users.find((user) => user.id === u.id);
+    if (selectedTeamId && fullUser?.teamId !== selectedTeamId && (fullUser?.team as any)?.id !== selectedTeamId) {
+      return false;
+    }
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (fullUser?.team?.name && fullUser.team.name.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
-      {/* Header & Athlete Selector */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-rose-300 uppercase tracking-widest">
-            Estadísticas & Gráficos Circulares
-          </span>
-          <h1 className="text-3xl font-black text-white uppercase tracking-tight flex items-center gap-2.5">
-            <PieChartIcon className="w-8 h-8 text-rose-400" />
-            <span>Categorización del Conocimiento</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-rose-200 mt-1">
-            Visualiza mediante diagramas circulares cuánto sabe cada atleta o el equipo sobre cada dimensión táctica evaluada.
-          </p>
+      {/* Header */}
+      <div>
+        <span className="text-xs font-bold text-rose-300 uppercase tracking-widest">
+          Estadísticas & Gráficos Circulares
+        </span>
+        <h1 className="text-3xl font-black text-white uppercase tracking-tight flex items-center gap-2.5">
+          <PieChartIcon className="w-8 h-8 text-rose-400" />
+          <span>Categorización del Conocimiento Táctico</span>
+        </h1>
+        <p className="text-xs sm:text-sm text-rose-200 mt-1">
+          Visualiza mediante diagramas circulares cuánto sabe cada atleta o el equipo sobre cada dimensión táctica evaluada.
+        </p>
+      </div>
+
+      {/* Filter and Search Bar (Igual que en Auditoría con búsqueda por nombre y por equipo) */}
+      <div className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/15 shadow-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Barra de búsqueda por nombre de atleta o equipo */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por atleta o equipo..."
+            className="w-full pl-10 pr-4 py-2 rounded-2xl bg-black/40 border border-white/15 text-white placeholder-stone-400 text-xs focus:ring-2 focus:ring-rose-500"
+          />
         </div>
 
-        {/* Athlete Selector Dropdown */}
-        <div className="flex items-center space-x-3 bg-white/10 p-2.5 rounded-2xl border border-white/15">
-          <UserIcon className="w-4 h-4 text-rose-300 ml-2" />
-          <span className="text-xs font-bold text-white whitespace-nowrap">Filtrar Atleta:</span>
+        {/* Selector de Equipo */}
+        <div className="flex items-center space-x-2 bg-black/40 px-3 py-1 rounded-2xl border border-white/15">
+          <Users className="w-4 h-4 text-rose-300 ml-1 flex-shrink-0" />
+          <select
+            value={selectedTeamId}
+            onChange={(e) => {
+              setSelectedTeamId(e.target.value);
+              setSelectedUserId(''); // reset individual user if changing team
+            }}
+            className="w-full bg-transparent border-none text-white text-xs font-semibold focus:outline-none py-1.5"
+          >
+            <option value="" className="bg-stone-900 text-white">Todos los Equipos</option>
+            {teams.map((tm) => (
+              <option key={tm.id} value={tm.id} className="bg-stone-900 text-white">
+                {tm.name} ({tm.memberCount || 0} atletas)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Selector de Atleta */}
+        <div className="flex items-center space-x-2 bg-black/40 px-3 py-1 rounded-2xl border border-white/15">
+          <UserIcon className="w-4 h-4 text-rose-300 ml-1 flex-shrink-0" />
           <select
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
-            className="px-3.5 py-1.5 rounded-xl bg-stone-900 border border-white/20 text-white text-xs font-medium focus:ring-2 focus:ring-rose-500"
+            className="w-full bg-transparent border-none text-white text-xs font-medium focus:outline-none py-1.5"
           >
-            <option value="">Todo el Equipo (Cohorte General)</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.email})
+            <option value="" className="bg-stone-900 text-white">
+              {selectedTeamId ? 'Todos los atletas de este equipo' : 'Todos los Atletas (General)'}
+            </option>
+            {eligibleUsers.map((u) => (
+              <option key={u.id} value={u.id} className="bg-stone-900 text-white">
+                {u.name}
               </option>
             ))}
           </select>
         </div>
       </div>
+
+      {/* Selected Team Banner if team chosen */}
+      {selectedTeam && (
+        <div className="p-5 rounded-3xl bg-gradient-to-r from-rose-950/70 via-stone-900/70 to-rose-950/70 border border-white/20 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-600 text-white">
+                Analítica de Equipo
+              </span>
+              <span className="text-xs text-rose-200">
+                {selectedTeam.memberCount || 0} Integrantes
+              </span>
+            </div>
+            <h2 className="text-2xl font-black text-white mt-1">{selectedTeam.name}</h2>
+            {selectedTeam.description && (
+              <p className="text-xs text-stone-300 mt-0.5">{selectedTeam.description}</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            {analytics?.teamStats && (
+              <div className="text-right">
+                <span className="text-[10px] text-stone-400 uppercase font-bold block mb-1">
+                  Nivel Táctico del Equipo:
+                </span>
+                <PerformanceBadge level={analytics.teamStats.performanceLevel} size="md" />
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setSelectedTeamId('');
+                setSelectedUserId('');
+              }}
+              className="p-2 rounded-full hover:bg-white/10 text-stone-400 hover:text-white"
+              title="Quitar filtro de equipo"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Selected Athlete Banner if single user chosen */}
       {selectedAthlete && (
@@ -104,7 +222,10 @@ export const AnalyticsPage: React.FC = () => {
             />
             <div>
               <p className="text-sm font-black text-white">{selectedAthlete.name}</p>
-              <p className="text-xs text-rose-200">{selectedAthlete.email}</p>
+              <p className="text-xs text-rose-200">
+                {selectedAthlete.team?.name ? `Equipo: ${selectedAthlete.team.name} • ` : ''}
+                {selectedAthlete.email}
+              </p>
             </div>
           </div>
 
@@ -112,95 +233,99 @@ export const AnalyticsPage: React.FC = () => {
             onClick={() => setSelectedUserId('')}
             className="text-xs text-stone-300 hover:text-white underline font-semibold"
           >
-            Ver métricas globales del equipo
+            {selectedTeamId ? 'Ver métricas de todo este equipo' : 'Ver métricas globales'}
           </button>
         </div>
       )}
 
       {/* Main Section: Circular Pie Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* The Circular Pie Chart (Primary Focus) */}
-        <div className="lg:col-span-8">
-          <TopicPieChart
-            data={analytics.circularPieData}
-            title={
-              selectedAthlete
-                ? `Dominio Táctico: ${selectedAthlete.name}`
-                : 'Dominio Táctico: Promedio del Equipo Universitario'
-            }
-            subtitle="Porcentaje de asertividad categorizado por tema (K1, K2, Percepción, Decisiones)"
-          />
-        </div>
-
-        {/* Difficulty Breakdown and Insights */}
-        <div className="lg:col-span-4 space-y-6">
+      {analytics && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Difficulty Cards */}
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/15 shadow-xl space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-rose-400" />
-              <span>Efectividad por Nivel de Dificultad</span>
-            </h3>
-
-            <div className="space-y-4 pt-1">
-              {analytics.difficultyBreakdown.map((item, idx) => (
-                <div key={idx} className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-stone-200">{item.difficulty}</span>
-                    <span className="text-white font-black">{item.accuracy}%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        item.difficulty === 'PRINCIPIANTE'
-                          ? 'bg-emerald-500'
-                          : item.difficulty === 'INTERMEDIO'
-                          ? 'bg-blue-500'
-                          : 'bg-rose-500'
-                      }`}
-                      style={{ width: `${item.accuracy}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-stone-400 block text-right">
-                    {item.totalAnswered} respuestas evaluadas
-                  </span>
-                </div>
-              ))}
-            </div>
+          {/* The Circular Pie Chart (Primary Focus) */}
+          <div className="lg:col-span-8">
+            <TopicPieChart
+              data={analytics.circularPieData}
+              title={
+                selectedAthlete
+                  ? `Dominio Táctico: ${selectedAthlete.name}`
+                  : selectedTeam
+                  ? `Dominio Táctico: ${selectedTeam.name}`
+                  : 'Dominio Táctico: Promedio del Equipo Universitario'
+              }
+              subtitle="Porcentaje de asertividad categorizado por tema (K1, K2, Percepción, Decisiones)"
+            />
           </div>
 
-          {/* Quick Squad Performance List */}
-          {!selectedAthlete && analytics.userSummaries.length > 0 && (
-            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/15 shadow-xl space-y-3">
+          {/* Difficulty Breakdown and Insights */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Difficulty Cards */}
+            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/15 shadow-xl space-y-4">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Users className="w-4 h-4 text-rose-400" />
-                <span>Rendimiento por Atleta</span>
+                <BarChart2 className="w-4 h-4 text-rose-400" />
+                <span>Efectividad por Dificultad</span>
               </h3>
 
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {analytics.userSummaries.map((u) => (
-                  <div
-                    key={u.id}
-                    onClick={() => setSelectedUserId(u.id)}
-                    className="p-2.5 rounded-xl bg-black/30 hover:bg-black/50 border border-white/10 flex items-center justify-between cursor-pointer transition-all"
-                  >
-                    <div className="overflow-hidden mr-2">
-                      <p className="text-xs font-bold text-white truncate">{u.name}</p>
-                      <p className="text-[10px] text-stone-400">{u.testsCompleted} tests</p>
+              <div className="space-y-4 pt-1">
+                {analytics.difficultyBreakdown.map((item, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-semibold">
+                      <span className="text-stone-200">{item.difficulty}</span>
+                      <span className="text-white font-black">{item.accuracy}%</span>
                     </div>
-                    <span className="text-xs font-black text-rose-300">
-                      {u.averagePercentage}%
+                    <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          item.difficulty === 'PRINCIPIANTE'
+                            ? 'bg-emerald-500'
+                            : item.difficulty === 'INTERMEDIO'
+                            ? 'bg-blue-500'
+                            : 'bg-rose-500'
+                        }`}
+                        style={{ width: `${item.accuracy}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-stone-400 block text-right">
+                      {item.totalAnswered} respuestas evaluadas
                     </span>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+
+            {/* Quick Squad Performance List */}
+            {!selectedAthlete && filteredUserSummaries.length > 0 && (
+              <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/15 shadow-xl space-y-3">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Users className="w-4 h-4 text-rose-400" />
+                  <span>Rendimiento por Atleta ({filteredUserSummaries.length})</span>
+                </h3>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {filteredUserSummaries.map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => setSelectedUserId(u.id)}
+                      className="p-2.5 rounded-xl bg-black/30 hover:bg-black/50 border border-white/10 flex items-center justify-between cursor-pointer transition-all"
+                    >
+                      <div className="overflow-hidden mr-2">
+                        <p className="text-xs font-bold text-white truncate">{u.name}</p>
+                        <p className="text-[10px] text-stone-400">{u.testsCompleted} tests</p>
+                      </div>
+                      <span className="text-xs font-black text-rose-300">
+                        {u.averagePercentage}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
 
         </div>
-
-      </div>
+      )}
 
     </div>
   );

@@ -1,5 +1,6 @@
 import {
   User,
+  Team,
   Category,
   Question,
   TestSummary,
@@ -198,10 +199,11 @@ export const api = {
     return handleResponse<{ submission: Submission; message: string }>(res);
   },
 
-  async getSubmissions(filters?: { userId?: string; testId?: string }) {
+  async getSubmissions(filters?: { userId?: string; testId?: string; teamId?: string }) {
     const params = new URLSearchParams();
     if (filters?.userId) params.append('userId', filters.userId);
     if (filters?.testId) params.append('testId', filters.testId);
+    if (filters?.teamId) params.append('teamId', filters.teamId);
 
     const query = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(`${API_BASE}/submissions${query}`, {
@@ -217,9 +219,57 @@ export const api = {
     return handleResponse<{ submission: Submission }>(res);
   },
 
+  // Teams
+  async getTeams() {
+    const res = await fetch(`${API_BASE}/teams`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<{ teams: Team[] }>(res);
+  },
+
+  async createTeam(data: { name: string; description?: string }) {
+    const res = await fetch(`${API_BASE}/teams`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ team: Team; message: string }>(res);
+  },
+
+  async deleteTeam(id: string) {
+    const res = await fetch(`${API_BASE}/teams/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  async joinTeam(teamId: string | null) {
+    const res = await fetch(`${API_BASE}/teams/join`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ teamId }),
+    });
+    return handleResponse<{ user: User; team: Team | null; message: string }>(res);
+  },
+
+  async getMyTeam() {
+    const res = await fetch(`${API_BASE}/teams/my-team`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<{ team: Team | null }>(res);
+  },
+
   // Analytics
-  async getAnalytics(userId?: string) {
-    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+  async getAnalytics(filters?: { userId?: string; teamId?: string } | string) {
+    const params = new URLSearchParams();
+    if (typeof filters === 'string') {
+      if (filters) params.append('userId', filters);
+    } else if (filters) {
+      if (filters.userId) params.append('userId', filters.userId);
+      if (filters.teamId) params.append('teamId', filters.teamId);
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(`${API_BASE}/analytics${query}`, {
       headers: getHeaders(),
     });

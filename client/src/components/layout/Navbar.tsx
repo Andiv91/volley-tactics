@@ -14,6 +14,7 @@ import {
   Download,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -208,6 +209,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
                   <FileCheck2 className="w-4 h-4" />
                   <span>Mis Resultados</span>
                 </button>
+
+                <button
+                  onClick={() => onTabChange('athlete-team')}
+                  className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                    currentTab === 'athlete-team'
+                      ? 'bg-white text-rose-800 shadow-md'
+                      : 'text-rose-100 hover:bg-white/10'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Equipo</span>
+                </button>
               </>
             )}
           </nav>
@@ -382,6 +395,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
                 }`}
               >
                 Mis Resultados y Gráfico
+              </button>
+              <button
+                onClick={() => {
+                  onTabChange('athlete-team');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
+                  currentTab === 'athlete-team' ? 'bg-white text-rose-800' : 'text-rose-100'
+                }`}
+              >
+                Mi Equipo y Compañeros
               </button>
             </>
           )}

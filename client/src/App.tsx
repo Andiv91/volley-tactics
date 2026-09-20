@@ -6,6 +6,7 @@ import { AthleteDashboard } from './pages/AthleteDashboard';
 import { TestRunnerPage } from './pages/TestRunnerPage';
 import { TestResultPage } from './pages/TestResultPage';
 import { AthleteHistoryPage } from './pages/AthleteHistoryPage';
+import { AthleteTeamPage } from './pages/AthleteTeamPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { QuestionManager } from './pages/admin/QuestionManager';
 import { TestManager } from './pages/admin/TestManager';
@@ -172,6 +173,8 @@ const AppContent: React.FC = () => {
                   setCurrentTab('athlete-result');
                 }}
               />
+            ) : currentTab === 'athlete-team' ? (
+              <AthleteTeamPage />
             ) : (
               <AthleteDashboard
                 onStartTest={(testId) => setActiveTestId(testId)}
