@@ -180,8 +180,16 @@ export const googleAuth = async (req: Request, res: Response) => {
             email,
             name,
             role: 'USER',
-            avatarUrl,
+            avatarUrl: avatarUrl || '/icons/icondefault.png',
             googleId,
+          },
+        });
+      } else if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId,
+            avatarUrl: user.avatarUrl || avatarUrl || '/icons/icondefault.png',
           },
         });
       }
@@ -199,6 +207,10 @@ export const googleAuth = async (req: Request, res: Response) => {
           updatedAt: new Date().toISOString(),
         };
         memoryDb.users.push(user);
+        saveStore();
+      } else if (!user.googleId) {
+        user.googleId = googleId;
+        if (!user.avatarUrl) user.avatarUrl = avatarUrl || '/icons/icondefault.png';
         saveStore();
       }
     }
@@ -219,6 +231,12 @@ export const googleAuth = async (req: Request, res: Response) => {
     console.error('Error en autenticación Google:', error);
     return res.status(500).json({ message: 'Error procesando autenticación con Google' });
   }
+};
+
+export const getAuthConfig = async (req: Request, res: Response) => {
+  return res.json({
+    googleClientId: config.googleClientId || process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '',
+  });
 };
 
 export const getMe = async (req: AuthRequest, res: Response) => {

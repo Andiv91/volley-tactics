@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { Submission, AnalyticsData } from '../types';
 import { VolleyballLoader } from '../components/ui/VolleyballLoader';
 import { TopicPieChart } from '../components/charts/TopicPieChart';
+import { PerformanceBadge } from '../components/ui/PerformanceBadge';
 import { useAuth } from '../context/AuthContext';
 import {
   History,
@@ -88,13 +89,14 @@ export const AthleteHistoryPage: React.FC<AthleteHistoryPageProps> = ({ onInspec
                 className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/5 px-3 rounded-2xl transition-colors"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-white">
                       {sub.test?.title || sub.testTitle || 'Evaluación'}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-black/40 text-[10px] text-rose-200 uppercase font-semibold">
                       {sub.test?.phase || 'Fase Táctica'}
                     </span>
+                    <PerformanceBadge level={sub.performanceLevel} size="sm" />
                   </div>
                   <div className="flex items-center space-x-3 text-xs text-stone-300">
                     <span>{new Date(sub.createdAt).toLocaleDateString()}</span>

@@ -3,10 +3,12 @@ import confetti from 'canvas-confetti';
 import { Submission } from '../types';
 import { VolleyballLogo } from '../components/ui/VolleyballLoader';
 import { MediaViewer } from '../components/media/MediaViewer';
+import { PerformanceBadge, getPerformanceConfig } from '../components/ui/PerformanceBadge';
 import {
   CheckCircle2,
   XCircle,
   Award,
+  Trophy,
   ArrowLeft,
   RotateCcw,
   MessageSquareQuote,
@@ -57,6 +59,18 @@ export const TestResultPage: React.FC<TestResultPageProps> = ({
   const percentage = submission.percentage;
   const passed = submission.passed;
 
+  const compThresh = submission.test?.competentThreshold ?? 60;
+  const profThresh = submission.test?.professionalThreshold ?? 85;
+  const level = submission.performanceLevel || (
+    percentage >= profThresh
+      ? 'PROFESIONAL'
+      : percentage >= compThresh
+      ? 'COMPETENTE'
+      : 'PRINCIPIANTE'
+  );
+  const perfConfig = getPerformanceConfig(level);
+  const PerfIcon = perfConfig.icon;
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       
@@ -71,9 +85,12 @@ export const TestResultPage: React.FC<TestResultPageProps> = ({
         <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           
           <div className="space-y-2">
-            <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-widest text-white">
-              {passed ? '¡Evaluación Aprobada!' : 'Evaluación Completada'}
-            </span>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-widest text-white">
+                {passed ? '¡Evaluación Aprobada!' : 'Evaluación Completada'}
+              </span>
+              <PerformanceBadge level={level} size="sm" />
+            </div>
             <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
               {submission.testTitle || submission.test?.title || 'Resultado de la Prueba'}
             </h1>
@@ -122,6 +139,43 @@ export const TestResultPage: React.FC<TestResultPageProps> = ({
               <span>Reintentar Prueba</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Performance / Knowledge Level Card */}
+      <div className={`p-6 sm:p-7 rounded-3xl border shadow-2xl backdrop-blur-xl bg-gradient-to-br ${perfConfig.cardBg}`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] uppercase font-black tracking-widest text-stone-300">
+                Calificación de Conocimiento
+              </span>
+              <PerformanceBadge level={level} size="md" />
+            </div>
+            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+              <PerfIcon className={`w-6 h-6 ${perfConfig.textColor}`} />
+              <span>{perfConfig.title}</span>
+            </h2>
+            <p className="text-xs text-stone-200 max-w-xl leading-relaxed">
+              {perfConfig.description}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-center md:text-right flex-shrink-0">
+            <span className="text-[10px] text-stone-400 uppercase font-bold block mb-1">
+              Escala de esta Evaluación
+            </span>
+            <div className="flex items-center justify-center md:justify-end space-x-2 text-[10px] font-mono">
+              <span className="text-orange-300 font-bold">Principiante: &lt;{compThresh}%</span>
+              <span className="text-stone-500">•</span>
+              <span className="text-emerald-300 font-bold">Competente: ≥{compThresh}%</span>
+              <span className="text-stone-500">•</span>
+              <span className="text-amber-300 font-bold">Profesional: ≥{profThresh}%</span>
+            </div>
+            <span className="text-[11px] text-stone-300 block mt-1.5">
+              Aciertos: <strong className="text-white">{percentage}%</strong> ({score}/{maxScore} preguntas)
+            </span>
+          </div>
         </div>
       </div>
 

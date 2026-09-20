@@ -33,6 +33,8 @@ export const getTests = async (req: AuthRequest, res: Response) => {
         phase: t.phase,
         durationMinutes: t.durationMinutes,
         passingScore: t.passingScore,
+        competentThreshold: (t as any).competentThreshold ?? 60,
+        professionalThreshold: (t as any).professionalThreshold ?? 85,
         isActive: t.isActive,
         createdAt: t.createdAt,
         questionCount: t.testQuestions.length,
@@ -65,6 +67,8 @@ export const getTests = async (req: AuthRequest, res: Response) => {
           phase: t.phase,
           durationMinutes: t.durationMinutes,
           passingScore: t.passingScore,
+          competentThreshold: t.competentThreshold ?? 60,
+          professionalThreshold: t.professionalThreshold ?? 85,
           isActive: t.isActive,
           createdAt: t.createdAt,
           questionCount: t.questionIds.length,
@@ -106,8 +110,6 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
 
       if (!test) return res.status(404).json({ message: 'Evaluación no encontrada' });
 
-      // If athlete is taking test, we still include options text and IDs.
-      // Notice: feedbackMessage is delivered during review or after choice!
       const questions = test.testQuestions.map(tq => ({
         id: tq.question.id,
         title: tq.question.title,
@@ -120,7 +122,6 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
         options: tq.question.options.map(opt => ({
           id: opt.id,
           text: opt.text,
-          // Admin sees isCorrect and feedbackMessage upfront in editor
           ...(isAdmin ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
         })),
       }));
@@ -133,6 +134,8 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
           phase: test.phase,
           durationMinutes: test.durationMinutes,
           passingScore: test.passingScore,
+          competentThreshold: (test as any).competentThreshold ?? 60,
+          professionalThreshold: (test as any).professionalThreshold ?? 85,
           isActive: test.isActive,
           questions,
         },
@@ -167,6 +170,8 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
       return res.json({
         test: {
           ...test,
+          competentThreshold: test.competentThreshold ?? 60,
+          professionalThreshold: test.professionalThreshold ?? 85,
           questions,
         },
       });
@@ -179,11 +184,23 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
 
 export const createTest = async (req: Request, res: Response) => {
   try {
-    const { title, description, phase, durationMinutes, passingScore, questionIds } = req.body;
+    const {
+      title,
+      description,
+      phase,
+      durationMinutes,
+      passingScore,
+      competentThreshold,
+      professionalThreshold,
+      questionIds,
+    } = req.body;
 
     if (!title || !Array.isArray(questionIds) || questionIds.length === 0) {
       return res.status(400).json({ message: 'Título y al menos una pregunta son requeridos' });
     }
+
+    const compThresh = Math.max(1, Math.min(98, Number(competentThreshold) || 60));
+    const profThresh = Math.max(compThresh + 1, Math.min(100, Number(professionalThreshold) || 85));
 
     if (isPrismaAvailable && prisma) {
       const test = await prisma.test.create({
@@ -193,6 +210,8 @@ export const createTest = async (req: Request, res: Response) => {
           phase: phase || 'INTEGRAL',
           durationMinutes: Number(durationMinutes) || 15,
           passingScore: Number(passingScore) || 70,
+          competentThreshold: compThresh,
+          professionalThreshold: profThresh,
           testQuestions: {
             create: questionIds.map((qId: string, index: number) => ({
               questionId: qId,
@@ -210,6 +229,8 @@ export const createTest = async (req: Request, res: Response) => {
         phase: phase || 'INTEGRAL',
         durationMinutes: Number(durationMinutes) || 15,
         passingScore: Number(passingScore) || 70,
+        competentThreshold: compThresh,
+        professionalThreshold: profThresh,
         isActive: true,
         questionIds,
         createdAt: new Date().toISOString(),

@@ -8,6 +8,7 @@ import {
   Trash2,
   Clock,
   Award,
+  Trophy,
   CheckSquare,
   Square,
   Flame,
@@ -26,6 +27,8 @@ export const TestManager: React.FC = () => {
   const [phase, setPhase] = useState('TEORICO');
   const [durationMinutes, setDurationMinutes] = useState(15);
   const [passingScore, setPassingScore] = useState(70);
+  const [competentThreshold, setCompetentThreshold] = useState(60);
+  const [professionalThreshold, setProfessionalThreshold] = useState(85);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
 
   const loadData = async () => {
@@ -71,12 +74,16 @@ export const TestManager: React.FC = () => {
         phase,
         durationMinutes: Number(durationMinutes),
         passingScore: Number(passingScore),
+        competentThreshold: Number(competentThreshold),
+        professionalThreshold: Number(professionalThreshold),
         questionIds: selectedQuestionIds,
       });
 
       setTitle('');
       setDescription('');
       setSelectedQuestionIds([]);
+      setCompetentThreshold(60);
+      setProfessionalThreshold(85);
       setShowCreateModal(false);
       await loadData();
     } catch (err: any) {
@@ -150,7 +157,16 @@ export const TestManager: React.FC = () => {
 
               <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-stone-300">
                 <span>{test.questionCount} preguntas incluidas</span>
-                <span className="text-rose-300 font-bold">Min: {test.passingScore}%</span>
+                <span className="text-rose-300 font-bold">Mínimo: {test.passingScore}%</span>
+              </div>
+
+              <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px]">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold">
+                  Competente: ≥{test.competentThreshold ?? 60}%
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold">
+                  Profesional: ≥{test.professionalThreshold ?? 85}%
+                </span>
               </div>
             </div>
 
@@ -256,6 +272,80 @@ export const TestManager: React.FC = () => {
                     onChange={(e) => setPassingScore(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-white/15 text-white"
                   />
+                </div>
+              </div>
+
+              {/* Performance Classification Thresholds */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Clasificación de Conocimiento por Niveles</span>
+                    </h3>
+                    <p className="text-[11px] text-stone-300">
+                      Define los porcentajes de preguntas acertadas para clasificar a los estudiantes:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-emerald-300 font-bold uppercase text-[11px] mb-1">
+                      Mínimo para "Competente" (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        max="98"
+                        value={competentThreshold}
+                        onChange={(e) => setCompetentThreshold(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-emerald-500/40 text-emerald-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        required
+                      />
+                      <span className="absolute right-3 top-2 text-stone-400 text-xs font-bold">%</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-amber-300 font-bold uppercase text-[11px] mb-1">
+                      Mínimo para "Profesional" (%)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={competentThreshold + 1}
+                        max="100"
+                        value={professionalThreshold}
+                        onChange={(e) => setProfessionalThreshold(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl bg-stone-800 border border-amber-500/40 text-amber-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        required
+                      />
+                      <span className="absolute right-3 top-2 text-stone-400 text-xs font-bold">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Scale Preview */}
+                <div className="pt-2 border-t border-white/10">
+                  <span className="text-[10px] uppercase font-bold text-stone-400 block mb-1.5">
+                    Escala de Clasificación Resultante:
+                  </span>
+                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    <div className="p-2 rounded-xl bg-orange-500/15 border border-orange-500/30">
+                      <span className="font-bold text-orange-300 block">Principiante</span>
+                      <span className="text-[10px] text-stone-300 font-mono">0% - {Math.max(0, competentThreshold - 1)}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30">
+                      <span className="font-bold text-emerald-300 block">Competente</span>
+                      <span className="text-[10px] text-stone-300 font-mono">{competentThreshold}% - {Math.max(competentThreshold, professionalThreshold - 1)}%</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                      <span className="font-bold text-amber-300 block">Profesional</span>
+                      <span className="text-[10px] text-stone-300 font-mono">≥ {professionalThreshold}%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

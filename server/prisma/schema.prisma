@@ -66,17 +66,19 @@ model QuestionOption {
 }
 
 model Test {
-  id              String         @id @default(uuid())
-  title           String
-  description     String?
-  phase           String         @default("TEORICO") // "TEORICO" | "DECISION_VIDEO" | "INTEGRAL"
-  durationMinutes Int            @default(20)
-  passingScore    Int            @default(70)
-  isActive        Boolean        @default(true)
-  testQuestions   TestQuestion[]
-  submissions     Submission[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                    String         @id @default(uuid())
+  title                 String
+  description           String?
+  phase                 String         @default("TEORICO") // "TEORICO" | "DECISION_VIDEO" | "INTEGRAL"
+  durationMinutes       Int            @default(20)
+  passingScore          Int            @default(70)
+  competentThreshold    Int            @default(60) // Umbral mínimo para nivel Competente (%)
+  professionalThreshold Int            @default(85) // Umbral mínimo para nivel Profesional (%)
+  isActive              Boolean        @default(true)
+  testQuestions         TestQuestion[]
+  submissions           Submission[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   @@map("tests")
 }
@@ -103,6 +105,7 @@ model Submission {
   maxScore         Float
   percentage       Float
   passed           Boolean
+  performanceLevel String             @default("PRINCIPIANTE") // "PRINCIPIANTE" | "COMPETENTE" | "PROFESIONAL"
   timeSpentSeconds Int                @default(0)
   answers          SubmissionAnswer[]
   createdAt        DateTime           @default(now())

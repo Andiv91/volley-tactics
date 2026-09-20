@@ -86,6 +86,8 @@ export interface TestEntity {
   phase: string;
   durationMinutes: number;
   passingScore: number;
+  competentThreshold?: number;
+  professionalThreshold?: number;
   isActive: boolean;
   questionIds: string[];
   createdAt: string;
@@ -113,6 +115,7 @@ export interface SubmissionEntity {
   maxScore: number;
   percentage: number;
   passed: boolean;
+  performanceLevel?: 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL';
   timeSpentSeconds: number;
   answers: SubmissionAnswerEntity[];
   createdAt: string;

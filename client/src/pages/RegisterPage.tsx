@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 import { VolleyballHeroBackground } from '../components/layout/VolleyballHeroBackground';
 import { VolleyballLogo } from '../components/ui/VolleyballLoader';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +11,7 @@ interface RegisterPageProps {
 }
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
-  const { register, isLoading } = useAuth();
+  const { register, googleAuth, isLoading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +29,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
       await register({ name, email, password, role });
     } catch (err: any) {
       setError(err.message || 'Error al crear la cuenta');
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError(null);
+    if (!credentialResponse.credential) {
+      setError('No se recibió la credencial de Google.');
+      return;
+    }
+    try {
+      await googleAuth({ credential: credentialResponse.credential });
+    } catch (err: any) {
+      setError(err.message || 'Error al autenticar con Google');
     }
   };
 
@@ -139,6 +153,28 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
               >
                 {isLoading ? 'Registrando...' : 'CREAR CUENTA'}
               </button>
+            </div>
+
+            {/* Divider */}
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-white/20"></div>
+              <span className="flex-shrink mx-4 text-[11px] font-semibold text-rose-200 tracking-wider uppercase">
+                o registrarse con
+              </span>
+              <div className="flex-grow border-t border-white/20"></div>
+            </div>
+
+            {/* Google Login Component */}
+            <div className="w-full flex justify-center overflow-hidden rounded-full shadow-lg bg-white p-0.5">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('No se pudo conectar con el servicio de Google')}
+                shape="pill"
+                size="large"
+                width="340"
+                text="signup_with"
+                locale="es"
+              />
             </div>
           </form>
 

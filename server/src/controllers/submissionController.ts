@@ -89,6 +89,17 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
     const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
     const passed = percentage >= (test.passingScore || 70);
 
+    const compThresh = test.competentThreshold ?? 60;
+    const profThresh = test.professionalThreshold ?? 85;
+    let performanceLevel: 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL' = 'PRINCIPIANTE';
+    if (percentage >= profThresh) {
+      performanceLevel = 'PROFESIONAL';
+    } else if (percentage >= compThresh) {
+      performanceLevel = 'COMPETENTE';
+    } else {
+      performanceLevel = 'PRINCIPIANTE';
+    }
+
     let savedSubmission: any = null;
 
     if (isPrismaAvailable && prisma) {
@@ -100,6 +111,7 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
           maxScore,
           percentage,
           passed,
+          performanceLevel,
           timeSpentSeconds: Number(timeSpentSeconds) || 0,
           answers: {
             create: processedAnswers.map(ans => ({
@@ -132,6 +144,7 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
         maxScore,
         percentage,
         passed,
+        performanceLevel,
         timeSpentSeconds: Number(timeSpentSeconds) || 0,
         createdAt: new Date().toISOString(),
         answers: processedAnswers.map((ans, idx) => ({
@@ -183,7 +196,14 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
         where,
         include: {
           test: {
-            select: { id: true, title: true, phase: true, passingScore: true },
+            select: {
+              id: true,
+              title: true,
+              phase: true,
+              passingScore: true,
+              competentThreshold: true,
+              professionalThreshold: true,
+            },
           },
           user: {
             select: { id: true, name: true, email: true, avatarUrl: true },
@@ -195,7 +215,22 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
         orderBy: { createdAt: 'desc' },
       });
 
-      return res.json({ submissions });
+      const formatted = submissions.map((s: any) => {
+        const comp = s.test?.competentThreshold ?? 60;
+        const prof = s.test?.professionalThreshold ?? 85;
+        let level = s.performanceLevel;
+        if (!level) {
+          if (s.percentage >= prof) level = 'PROFESIONAL';
+          else if (s.percentage >= comp) level = 'COMPETENTE';
+          else level = 'PRINCIPIANTE';
+        }
+        return {
+          ...s,
+          performanceLevel: level,
+        };
+      });
+
+      return res.json({ submissions: formatted });
     } else {
       let list = [...memoryDb.submissions];
       if (!isAdmin) {
@@ -210,6 +245,15 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
       const formatted = list.map(s => {
         const u = memoryDb.users.find(item => item.id === s.userId);
         const t = memoryDb.tests.find(item => item.id === s.testId);
+        const comp = t?.competentThreshold ?? 60;
+        const prof = t?.professionalThreshold ?? 85;
+        let level = s.performanceLevel;
+        if (!level) {
+          if (s.percentage >= prof) level = 'PROFESIONAL';
+          else if (s.percentage >= comp) level = 'COMPETENTE';
+          else level = 'PRINCIPIANTE';
+        }
+
         return {
           id: s.id,
           userId: s.userId,
@@ -218,6 +262,7 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
           maxScore: s.maxScore,
           percentage: s.percentage,
           passed: s.passed,
+          performanceLevel: level,
           timeSpentSeconds: s.timeSpentSeconds,
           createdAt: s.createdAt,
           user: {
@@ -231,6 +276,8 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
             title: t?.title || s.testTitle || 'Evaluación',
             phase: t?.phase || 'INTEGRAL',
             passingScore: t?.passingScore || 70,
+            competentThreshold: comp,
+            professionalThreshold: prof,
           },
           _count: {
             answers: s.answers?.length || 0,
@@ -283,7 +330,21 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
         return res.status(403).json({ message: 'No tiene permiso para ver este resultado' });
       }
 
-      return res.json({ submission });
+      const comp = (submission.test as any)?.competentThreshold ?? 60;
+      const prof = (submission.test as any)?.professionalThreshold ?? 85;
+      let level = (submission as any).performanceLevel;
+      if (!level) {
+        if (submission.percentage >= prof) level = 'PROFESIONAL';
+        else if (submission.percentage >= comp) level = 'COMPETENTE';
+        else level = 'PRINCIPIANTE';
+      }
+
+      return res.json({
+        submission: {
+          ...submission,
+          performanceLevel: level,
+        },
+      });
     } else {
       const submission = memoryDb.submissions.find(s => s.id === id);
       if (!submission) return res.status(404).json({ message: 'Resultado no encontrado' });
@@ -294,6 +355,15 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
 
       const u = memoryDb.users.find(item => item.id === submission.userId);
       const t = memoryDb.tests.find(item => item.id === submission.testId);
+
+      const comp = t?.competentThreshold ?? 60;
+      const prof = t?.professionalThreshold ?? 85;
+      let level = submission.performanceLevel;
+      if (!level) {
+        if (submission.percentage >= prof) level = 'PROFESIONAL';
+        else if (submission.percentage >= comp) level = 'COMPETENTE';
+        else level = 'PRINCIPIANTE';
+      }
 
       const enrichedAnswers = submission.answers.map(ans => {
         const q = memoryDb.questions.find(item => item.id === ans.questionId);
@@ -310,6 +380,7 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
       return res.json({
         submission: {
           ...submission,
+          performanceLevel: level,
           user: {
             id: u?.id || submission.userId,
             name: u?.name || submission.userName,

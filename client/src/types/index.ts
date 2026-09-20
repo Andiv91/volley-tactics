@@ -46,6 +46,8 @@ export interface Question {
   createdAt?: string;
 }
 
+export type PerformanceLevel = 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL';
+
 export interface TestSummary {
   id: string;
   title: string;
@@ -53,6 +55,8 @@ export interface TestSummary {
   phase: string;
   durationMinutes: number;
   passingScore: number;
+  competentThreshold?: number;
+  professionalThreshold?: number;
   isActive: boolean;
   questionCount: number;
   submissionCount: number;
@@ -67,6 +71,8 @@ export interface TestDetail {
   phase: string;
   durationMinutes: number;
   passingScore: number;
+  competentThreshold?: number;
+  professionalThreshold?: number;
   isActive: boolean;
   questions: Question[];
 }
@@ -99,6 +105,7 @@ export interface Submission {
   maxScore: number;
   percentage: number;
   passed: boolean;
+  performanceLevel?: PerformanceLevel;
   timeSpentSeconds: number;
   createdAt: string;
   answers?: SubmissionAnswer[];
@@ -114,6 +121,8 @@ export interface Submission {
     title: string;
     phase: string;
     passingScore: number;
+    competentThreshold?: number;
+    professionalThreshold?: number;
   };
   _count?: {
     answers: number;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { Submission, User, TestSummary } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
+import { PerformanceBadge } from '../../components/ui/PerformanceBadge';
 import {
   FileCheck2,
   Search,
@@ -24,9 +25,10 @@ export const ResultsExplorer: React.FC = () => {
   // Filters
   const [selectedUserFilter, setSelectedUserFilter] = useState('');
   const [selectedTestFilter, setSelectedTestFilter] = useState('');
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Selected Submission for Deep Audit Modal
+  // Selected Submission for Detailed Audit Modal
   const [auditSubmission, setAuditSubmission] = useState<any | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
@@ -65,6 +67,9 @@ export const ResultsExplorer: React.FC = () => {
   };
 
   const filteredSubmissions = submissions.filter((sub) => {
+    if (selectedUserFilter && sub.userId !== selectedUserFilter && sub.user?.id !== selectedUserFilter) return false;
+    if (selectedTestFilter && sub.testId !== selectedTestFilter && sub.test?.id !== selectedTestFilter) return false;
+    if (selectedLevelFilter && sub.performanceLevel !== selectedLevelFilter) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     const athleteName = sub.user?.name || sub.userName || '';
@@ -95,7 +100,7 @@ export const ResultsExplorer: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/15 shadow-xl grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/15 shadow-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Search */}
         <div className="relative">
           <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
@@ -139,6 +144,20 @@ export const ResultsExplorer: React.FC = () => {
             ))}
           </select>
         </div>
+
+        {/* Level Filter */}
+        <div>
+          <select
+            value={selectedLevelFilter}
+            onChange={(e) => setSelectedLevelFilter(e.target.value)}
+            className="w-full px-3.5 py-2 rounded-2xl bg-black/40 border border-white/15 text-white text-xs font-semibold"
+          >
+            <option value="">Todos los Niveles</option>
+            <option value="PRINCIPIANTE">Principiante</option>
+            <option value="COMPETENTE">Competente</option>
+            <option value="PROFESIONAL">Profesional</option>
+          </select>
+        </div>
       </div>
 
       {/* Submissions Table */}
@@ -151,6 +170,7 @@ export const ResultsExplorer: React.FC = () => {
                 <th className="py-4 px-6">Evaluación</th>
                 <th className="py-4 px-6">Fecha</th>
                 <th className="py-4 px-6">Efectividad</th>
+                <th className="py-4 px-6">Nivel Táctico</th>
                 <th className="py-4 px-6">Estado</th>
                 <th className="py-4 px-6 text-right">Auditar Respuestas</th>
               </tr>
@@ -158,7 +178,7 @@ export const ResultsExplorer: React.FC = () => {
             <tbody className="divide-y divide-white/10">
               {filteredSubmissions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-stone-400">
+                  <td colSpan={7} className="py-8 text-center text-stone-400">
                     No se encontraron entregas que coincidan con los filtros.
                   </td>
                 </tr>
@@ -208,6 +228,10 @@ export const ResultsExplorer: React.FC = () => {
                     </td>
 
                     <td className="py-4 px-6">
+                      <PerformanceBadge level={sub.performanceLevel} size="sm" />
+                    </td>
+
+                    <td className="py-4 px-6">
                       {sub.passed ? (
                         <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase">
                           <CheckCircle2 className="w-3 h-3" />
@@ -252,13 +276,15 @@ export const ResultsExplorer: React.FC = () => {
                 <h2 className="text-xl sm:text-2xl font-black text-white mt-0.5">
                   {auditSubmission.test?.title || auditSubmission.testTitle}
                 </h2>
-                <div className="flex items-center space-x-3 text-xs text-stone-300 mt-1">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-stone-300 mt-1.5">
                   <span className="font-bold text-white">
                     Atleta: {auditSubmission.user?.name || auditSubmission.userName}
                   </span>
-                  <span>•</span>
+                  <span className="text-stone-500">•</span>
                   <span>Efectividad: {auditSubmission.percentage}%</span>
-                  <span>•</span>
+                  <span className="text-stone-500">•</span>
+                  <PerformanceBadge level={auditSubmission.performanceLevel} size="sm" />
+                  <span className="text-stone-500">•</span>
                   <span>{new Date(auditSubmission.createdAt).toLocaleString()}</span>
                 </div>
               </div>

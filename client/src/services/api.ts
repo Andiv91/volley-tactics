@@ -164,6 +164,8 @@ export const api = {
     phase?: string;
     durationMinutes?: number;
     passingScore?: number;
+    competentThreshold?: number;
+    professionalThreshold?: number;
     questionIds: string[];
   }) {
     const res = await fetch(`${API_BASE}/tests`, {
