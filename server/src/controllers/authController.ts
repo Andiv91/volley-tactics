@@ -324,24 +324,48 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         include: {
           team: {
             include: {
+              createdBy: { select: { id: true, name: true, email: true } },
               members: {
                 select: { id: true, name: true, email: true, avatarUrl: true, role: true },
               },
             },
           },
+          teamMemberships: {
+            include: {
+              team: {
+                include: {
+                  createdBy: { select: { id: true, name: true, email: true } },
+                  members: {
+                    select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+                  },
+                },
+              },
+            },
+          },
         },
       });
+
+      if (user && !user.team && user.teamMemberships && user.teamMemberships.length > 0) {
+        user.team = user.teamMemberships[0].team;
+        user.teamId = user.team.id;
+      }
     } else {
       const raw = memoryDb.users.find(u => u.id === req.user?.id);
       if (raw) {
-        const team = (memoryDb.teams || []).find(t => t.id === raw.teamId);
+        let teamId = raw.teamId;
+        if (!teamId) {
+          const tm = (memoryDb.teamMembers || []).find(tm => tm.userId === raw.id);
+          if (tm) teamId = tm.teamId;
+        }
+        const team = (memoryDb.teams || []).find(t => t.id === teamId);
         const members = team
           ? (memoryDb.users || [])
-              .filter(u => u.teamId === team.id)
+              .filter(u => u.teamId === team.id || (memoryDb.teamMembers || []).some(tm => tm.teamId === team.id && tm.userId === u.id))
               .map(({ password: _, ...u }) => u)
           : [];
         user = {
           ...raw,
+          teamId,
           team: team ? { ...team, members, memberCount: members.length } : null,
         };
       }

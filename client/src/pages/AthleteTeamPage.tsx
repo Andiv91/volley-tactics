@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export const AthleteTeamPage: React.FC = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser } = useAuth();
   const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,10 @@ export const AthleteTeamPage: React.FC = () => {
     try {
       setJoiningTeamId(teamId || 'leaving');
       const res = await api.joinTeam(teamId);
-      updateUser(res.user);
+      if (res.user) {
+        updateUser(res.user);
+      }
+      await refreshUser();
       await loadData();
       setShowSwitchModal(false);
     } catch (err: any) {

@@ -396,6 +396,7 @@ export const joinTeam = async (req: AuthRequest, res: Response) => {
         include: {
           team: {
             include: {
+              createdBy: { select: { id: true, name: true, email: true } },
               members: {
                 select: { id: true, name: true, email: true, avatarUrl: true, role: true },
               },
@@ -403,6 +404,27 @@ export const joinTeam = async (req: AuthRequest, res: Response) => {
           },
         },
       });
+
+      // Sincronizar tabla team_members para redundancia y consultas de auditoría
+      if (teamId) {
+        await prisma.teamMember.upsert({
+          where: {
+            teamId_userId: {
+              teamId,
+              userId,
+            },
+          },
+          create: {
+            teamId,
+            userId,
+          },
+          update: {},
+        });
+      } else {
+        await prisma.teamMember.deleteMany({
+          where: { userId },
+        });
+      }
 
       const { password: _, ...userWithoutPassword } = updatedUser;
       return res.json({
@@ -422,11 +444,28 @@ export const joinTeam = async (req: AuthRequest, res: Response) => {
 
       user.teamId = teamId || null;
       user.updatedAt = new Date().toISOString();
+
+      if (teamId) {
+        if (!memoryDb.teamMembers) memoryDb.teamMembers = [];
+        if (!memoryDb.teamMembers.some((tm) => tm.teamId === teamId && tm.userId === userId)) {
+          memoryDb.teamMembers.push({
+            id: `tm-${Date.now()}`,
+            teamId,
+            userId,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } else {
+        if (memoryDb.teamMembers) {
+          memoryDb.teamMembers = memoryDb.teamMembers.filter((tm) => tm.userId !== userId);
+        }
+      }
+
       saveStore();
 
       const teamMembers = targetTeam
         ? memoryDb.users
-            .filter((u) => u.teamId === targetTeam.id)
+            .filter((u) => u.teamId === targetTeam.id || (memoryDb.teamMembers || []).some((tm) => tm.teamId === targetTeam.id && tm.userId === u.id))
             .map(({ password: _, ...u }) => u)
         : [];
 
@@ -454,19 +493,37 @@ export const getMyTeam = async (req: AuthRequest, res: Response) => {
         include: {
           team: {
             include: {
+              createdBy: { select: { id: true, name: true, email: true } },
               members: {
                 select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+              },
+            },
+          },
+          teamMemberships: {
+            include: {
+              team: {
+                include: {
+                  createdBy: { select: { id: true, name: true, email: true } },
+                  members: {
+                    select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+                  },
+                },
               },
             },
           },
         },
       });
 
-      if (!user || !user.team) {
+      let targetTeam = user?.team;
+      if (!targetTeam && user?.teamMemberships && user.teamMemberships.length > 0) {
+        targetTeam = user.teamMemberships[0].team;
+      }
+
+      if (!targetTeam) {
         return res.json({ team: null });
       }
 
-      const memberIds = user.team.members.map((m: any) => m.id);
+      const memberIds = (targetTeam.members || []).map((m: any) => m.id);
       const submissions = await prisma.submission.findMany({
         where: { userId: { in: memberIds } },
         select: {
@@ -499,11 +556,12 @@ export const getMyTeam = async (req: AuthRequest, res: Response) => {
 
       return res.json({
         team: {
-          id: user.team.id,
-          name: user.team.name,
-          description: user.team.description,
-          memberCount: user.team.members.length,
-          members: user.team.members,
+          id: targetTeam.id,
+          name: targetTeam.name,
+          description: targetTeam.description,
+          createdBy: targetTeam.createdBy,
+          memberCount: targetTeam.members ? targetTeam.members.length : 0,
+          members: targetTeam.members,
           stats: {
             totalEvaluations: totalSubs,
             averagePercentage: avgPercentage,
@@ -516,15 +574,24 @@ export const getMyTeam = async (req: AuthRequest, res: Response) => {
       });
     } else {
       const user = memoryDb.users.find((u) => u.id === userId);
-      if (!user || !user.teamId) {
+      if (!user) {
         return res.json({ team: null });
       }
 
-      const team = (memoryDb.teams || []).find((t) => t.id === user.teamId);
+      let targetTeamId = user.teamId;
+      if (!targetTeamId) {
+        const tm = (memoryDb.teamMembers || []).find((t) => t.userId === userId);
+        if (tm) targetTeamId = tm.teamId;
+      }
+      if (!targetTeamId) {
+        return res.json({ team: null });
+      }
+
+      const team = (memoryDb.teams || []).find((t) => t.id === targetTeamId);
       if (!team) return res.json({ team: null });
 
       const members = memoryDb.users
-        .filter((u) => u.teamId === team.id)
+        .filter((u) => u.teamId === team.id || (memoryDb.teamMembers || []).some((tm) => tm.teamId === team.id && tm.userId === u.id))
         .map(({ password: _, ...u }) => u);
       const memberIds = members.map((m) => m.id);
 

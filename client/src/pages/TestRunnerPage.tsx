@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { TestDetail, Question } from '../types';
 import { MediaViewer } from '../components/media/MediaViewer';
 import { VolleyballLoader, VolleyballLogo } from '../components/ui/VolleyballLoader';
@@ -10,23 +11,33 @@ import {
   ArrowLeft,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   ShieldCheck,
   Award,
   Maximize2,
   X,
   ImageIcon,
   Info,
+  Users,
 } from 'lucide-react';
 
 interface TestRunnerPageProps {
   testId: string;
   onFinish: (submissionResult: any) => void;
   onCancel: () => void;
+  onNavigateToTeam?: () => void;
 }
 
-export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish, onCancel }) => {
+export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({
+  testId,
+  onFinish,
+  onCancel,
+  onNavigateToTeam,
+}) => {
+  const { user } = useAuth();
   const [test, setTest] = useState<TestDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasNoTeamError, setHasNoTeamError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,6 +47,19 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
   useEffect(() => {
     const fetchTest = async () => {
       try {
+        // Verificar que el estudiante tenga un equipo seleccionado
+        if (user && user.role === 'USER') {
+          const hasLocalTeam = Boolean(user.teamId || user.team);
+          if (!hasLocalTeam) {
+            const teamRes = await api.getMyTeam().catch(() => ({ team: null }));
+            if (!teamRes.team) {
+              setHasNoTeamError(true);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
         const res = await api.getTestById(testId);
         setTest(res.test);
       } catch (err) {
@@ -47,7 +71,7 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
       }
     };
     fetchTest();
-  }, [testId]);
+  }, [testId, user]);
 
   // Elapsed timer
   useEffect(() => {
@@ -56,6 +80,46 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  if (hasNoTeamError) {
+    return (
+      <div className="max-w-lg mx-auto my-12 p-8 rounded-3xl bg-[#26050b]/90 border-2 border-amber-500/50 backdrop-blur-md shadow-2xl text-center space-y-6">
+        <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border-2 border-amber-400/40 flex items-center justify-center text-amber-400 mx-auto shadow-inner">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        <div>
+          <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase tracking-wider border border-amber-500/30">
+            Paso Obligatorio
+          </span>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight mt-3">
+            Debes seleccionar un equipo primero
+          </h2>
+          <p className="text-amber-100 text-sm leading-relaxed mt-2">
+            Debes seleccionar un equipo primero en la pestaña <strong className="text-amber-300">Equipos</strong>, busca el que tu técnico haya creado. De esta forma tus respuestas y estadísticas quedarán vinculadas a su auditoría.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <button
+            onClick={() => {
+              if (onNavigateToTeam) onNavigateToTeam();
+              else onCancel();
+            }}
+            className="flex-1 inline-flex items-center justify-center space-x-2 py-3 px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-stone-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg"
+          >
+            <Users className="w-4 h-4" />
+            <span>Ir a Equipos</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-stone-300 font-bold text-xs uppercase tracking-wider transition-all border border-white/10"
+          >
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || !test) {
     return <VolleyballLoader text="Preparando situaciones de juego y video..." />;

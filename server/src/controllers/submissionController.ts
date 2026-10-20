@@ -7,6 +7,29 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'No autenticado' });
 
+    // Validar que los estudiantes (rol USER) pertenezcan a un equipo antes de enviar respuestas
+    const userRole = req.user?.role;
+    if (userRole === 'USER') {
+      let userTeamId: string | null = null;
+      if (isPrismaAvailable && prisma) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { teamId: true, teamMemberships: { select: { teamId: true }, take: 1 } },
+        });
+        userTeamId = dbUser?.teamId || (dbUser?.teamMemberships?.[0]?.teamId ?? null);
+      } else {
+        const memUser = memoryDb.users.find(u => u.id === userId);
+        const memTm = (memoryDb.teamMembers || []).find(tm => tm.userId === userId);
+        userTeamId = memUser?.teamId || memTm?.teamId || null;
+      }
+
+      if (!userTeamId) {
+        return res.status(400).json({
+          message: 'Debes seleccionar un equipo primero en la pestaña Equipos (busca el que tu técnico haya creado) para que tus respuestas se registren correctamente.',
+        });
+      }
+    }
+
     const { testId, answers, timeSpentSeconds } = req.body;
 
     if (!testId || !Array.isArray(answers)) {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
+import { api } from './services/api';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { AthleteDashboard } from './pages/AthleteDashboard';
@@ -175,6 +176,10 @@ const AppContent: React.FC = () => {
                   setActiveTestId(null);
                   setCurrentTab('athlete-tests');
                 }}
+                onNavigateToTeam={() => {
+                  setActiveTestId(null);
+                  setCurrentTab('athlete-team');
+                }}
               />
             ) : currentTab === 'athlete-result' && activeSubmission ? (
               <TestResultPage
@@ -183,8 +188,22 @@ const AppContent: React.FC = () => {
                   setActiveSubmission(null);
                   setCurrentTab('athlete-tests');
                 }}
-                onRetry={() => {
+                onRetry={async () => {
                   if (activeSubmission.testId) {
+                    if (!user?.teamId && !user?.team) {
+                      try {
+                        const myTeamRes = await api.getMyTeam();
+                        if (!myTeamRes.team) {
+                          alert('Debes seleccionar un equipo primero en la pestaña Equipos. Busca el que tu técnico haya creado.');
+                          setCurrentTab('athlete-team');
+                          return;
+                        }
+                      } catch {
+                        alert('Debes seleccionar un equipo primero en la pestaña Equipos. Busca el que tu técnico haya creado.');
+                        setCurrentTab('athlete-team');
+                        return;
+                      }
+                    }
                     setActiveTestId(activeSubmission.testId);
                     setActiveSubmission(null);
                   }
@@ -203,6 +222,7 @@ const AppContent: React.FC = () => {
               <AthleteDashboard
                 onStartTest={(testId) => setActiveTestId(testId)}
                 onViewHistory={() => setCurrentTab('athlete-history')}
+                onNavigateToTeam={() => setCurrentTab('athlete-team')}
               />
             )}
           </>
