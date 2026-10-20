@@ -6,7 +6,7 @@ import { App } from './App';
 import './index.css';
 
 const defaultClientId =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID || '1029384756-sample-volleyball.apps.googleusercontent.com';
+  import.meta.env.VITE_GOOGLE_CLIENT_ID || '87851027620-vqsguoa2d4559h2fmdpad0b4j9hdtm5i.apps.googleusercontent.com';
 
 const GoogleAuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [clientId, setClientId] = useState<string>(import.meta.env.VITE_GOOGLE_CLIENT_ID || '');

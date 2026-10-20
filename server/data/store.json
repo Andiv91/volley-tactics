@@ -76,6 +76,55 @@
       "description": "Gestión emocional, respeto a árbitros y compañeros, juego limpio y autocontrol.",
       "color": "#10b981",
       "icon": "Heart"
+    },
+    {
+      "id": "cat-1792458115406-gbfnq",
+      "name": "Táctica General",
+      "description": "Conceptos y fundamentos teóricos de la táctica en el deporte",
+      "color": "#f59e0b",
+      "icon": "Brain"
+    },
+    {
+      "id": "cat-1792458115406-cekujr",
+      "name": "Táctica Individual",
+      "description": "Toma de decisiones independiente en ataque y defensa",
+      "color": "#10b981",
+      "icon": "User"
+    },
+    {
+      "id": "cat-1792458115406-e1pk5",
+      "name": "Táctica Colectiva",
+      "description": "Organización, sincronización y táctica de grupo/equipo",
+      "color": "#3b82f6",
+      "icon": "Users"
+    },
+    {
+      "id": "cat-1792458115406-8xjddr",
+      "name": "Sistemas Tácticos",
+      "description": "Estructuras y sistemas de juego en voleibol",
+      "color": "#8b5cf6",
+      "icon": "Compass"
+    },
+    {
+      "id": "cat-1792458115406-rrfmx9",
+      "name": "Sistemas Ofensivos",
+      "description": "Sistemas de ataque 5-1, 6-2 y 4-2",
+      "color": "#ec4899",
+      "icon": "Flame"
+    },
+    {
+      "id": "cat-1792458115406-6wm6ra",
+      "name": "Sistemas Defensivos",
+      "description": "Sistemas de bloqueo y defensa de campo perimetral y escalonada",
+      "color": "#ef4444",
+      "icon": "Shield"
+    },
+    {
+      "id": "cat-1792458115406-qidjmv",
+      "name": "Táctica Ofensiva",
+      "description": "Ataque individual, colectivo y variantes tácticas",
+      "color": "#f97316",
+      "icon": "Zap"
     }
   ],
   "questions": [

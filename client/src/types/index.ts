@@ -70,7 +70,14 @@ export interface Question {
   createdAt?: string;
 }
 
-export type PerformanceLevel = 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL';
+export type PerformanceLevel =
+  | 'PRINCIPIANTE'
+  | 'COMPETENTE'
+  | 'PROFESIONAL'
+  | 'EXCELENTE'
+  | 'BUENO'
+  | 'REGULAR'
+  | 'MALO';
 
 export interface TestSummary {
   id: string;
@@ -79,6 +86,7 @@ export interface TestSummary {
   phase: string;
   durationMinutes: number;
   passingScore: number;
+  scaleType?: string; // '3_TIER' | '4_TIER'
   competentThreshold?: number;
   professionalThreshold?: number;
   isActive: boolean;
@@ -95,6 +103,7 @@ export interface TestDetail {
   phase: string;
   durationMinutes: number;
   passingScore: number;
+  scaleType?: string; // '3_TIER' | '4_TIER'
   competentThreshold?: number;
   professionalThreshold?: number;
   isActive: boolean;

@@ -91,13 +91,26 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
 
     const compThresh = test.competentThreshold ?? 60;
     const profThresh = test.professionalThreshold ?? 85;
-    let performanceLevel: 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL' = 'PRINCIPIANTE';
-    if (percentage >= profThresh) {
-      performanceLevel = 'PROFESIONAL';
-    } else if (percentage >= compThresh) {
-      performanceLevel = 'COMPETENTE';
+    let performanceLevel: string = 'PRINCIPIANTE';
+
+    if (test.scaleType === '4_TIER') {
+      if (percentage >= 75) {
+        performanceLevel = 'EXCELENTE';
+      } else if (percentage >= 50) {
+        performanceLevel = 'BUENO';
+      } else if (percentage >= 25) {
+        performanceLevel = 'REGULAR';
+      } else {
+        performanceLevel = 'MALO';
+      }
     } else {
-      performanceLevel = 'PRINCIPIANTE';
+      if (percentage >= profThresh) {
+        performanceLevel = 'PROFESIONAL';
+      } else if (percentage >= compThresh) {
+        performanceLevel = 'COMPETENTE';
+      } else {
+        performanceLevel = 'PRINCIPIANTE';
+      }
     }
 
     let savedSubmission: any = null;
@@ -204,6 +217,7 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
               title: true,
               phase: true,
               passingScore: true,
+              scaleType: true,
               competentThreshold: true,
               professionalThreshold: true,
             },
@@ -232,9 +246,16 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
         const prof = s.test?.professionalThreshold ?? 85;
         let level = s.performanceLevel;
         if (!level) {
-          if (s.percentage >= prof) level = 'PROFESIONAL';
-          else if (s.percentage >= comp) level = 'COMPETENTE';
-          else level = 'PRINCIPIANTE';
+          if (s.test?.scaleType === '4_TIER') {
+            if (s.percentage >= 75) level = 'EXCELENTE';
+            else if (s.percentage >= 50) level = 'BUENO';
+            else if (s.percentage >= 25) level = 'REGULAR';
+            else level = 'MALO';
+          } else {
+            if (s.percentage >= prof) level = 'PROFESIONAL';
+            else if (s.percentage >= comp) level = 'COMPETENTE';
+            else level = 'PRINCIPIANTE';
+          }
         }
         return {
           ...s,
@@ -268,9 +289,16 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
         const prof = t?.professionalThreshold ?? 85;
         let level = s.performanceLevel;
         if (!level) {
-          if (s.percentage >= prof) level = 'PROFESIONAL';
-          else if (s.percentage >= comp) level = 'COMPETENTE';
-          else level = 'PRINCIPIANTE';
+          if (t?.scaleType === '4_TIER') {
+            if (s.percentage >= 75) level = 'EXCELENTE';
+            else if (s.percentage >= 50) level = 'BUENO';
+            else if (s.percentage >= 25) level = 'REGULAR';
+            else level = 'MALO';
+          } else {
+            if (s.percentage >= prof) level = 'PROFESIONAL';
+            else if (s.percentage >= comp) level = 'COMPETENTE';
+            else level = 'PRINCIPIANTE';
+          }
         }
 
         return {
@@ -297,6 +325,7 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
             title: t?.title || s.testTitle || 'Evaluación',
             phase: t?.phase || 'INTEGRAL',
             passingScore: t?.passingScore || 70,
+            scaleType: t?.scaleType || '3_TIER',
             competentThreshold: comp,
             professionalThreshold: prof,
           },
@@ -360,11 +389,19 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
 
       const comp = (submission.test as any)?.competentThreshold ?? 60;
       const prof = (submission.test as any)?.professionalThreshold ?? 85;
+      const is4Tier = (submission.test as any)?.scaleType === '4_TIER';
       let level = (submission as any).performanceLevel;
       if (!level) {
-        if (submission.percentage >= prof) level = 'PROFESIONAL';
-        else if (submission.percentage >= comp) level = 'COMPETENTE';
-        else level = 'PRINCIPIANTE';
+        if (is4Tier) {
+          if (submission.percentage >= 75) level = 'EXCELENTE';
+          else if (submission.percentage >= 50) level = 'BUENO';
+          else if (submission.percentage >= 25) level = 'REGULAR';
+          else level = 'MALO';
+        } else {
+          if (submission.percentage >= prof) level = 'PROFESIONAL';
+          else if (submission.percentage >= comp) level = 'COMPETENTE';
+          else level = 'PRINCIPIANTE';
+        }
       }
 
       return res.json({
@@ -386,11 +423,19 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
 
       const comp = t?.competentThreshold ?? 60;
       const prof = t?.professionalThreshold ?? 85;
+      const is4Tier = t?.scaleType === '4_TIER';
       let level = submission.performanceLevel;
       if (!level) {
-        if (submission.percentage >= prof) level = 'PROFESIONAL';
-        else if (submission.percentage >= comp) level = 'COMPETENTE';
-        else level = 'PRINCIPIANTE';
+        if (is4Tier) {
+          if (submission.percentage >= 75) level = 'EXCELENTE';
+          else if (submission.percentage >= 50) level = 'BUENO';
+          else if (submission.percentage >= 25) level = 'REGULAR';
+          else level = 'MALO';
+        } else {
+          if (submission.percentage >= prof) level = 'PROFESIONAL';
+          else if (submission.percentage >= comp) level = 'COMPETENTE';
+          else level = 'PRINCIPIANTE';
+        }
       }
 
       const enrichedAnswers = submission.answers.map(ans => {

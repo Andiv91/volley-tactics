@@ -11,6 +11,46 @@ interface PerformanceBadgeProps {
 
 export function getPerformanceConfig(level?: string) {
   switch (level?.toUpperCase()) {
+    case 'EXCELENTE':
+      return {
+        label: 'Excelente',
+        title: 'Desempeño Excelente',
+        description: 'Comprensión táctica superior. Domina todos los conceptos y sistemas de juego evaluados.',
+        badgeBg: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
+        cardBg: 'from-amber-950/40 via-yellow-900/30 to-black/60 border-amber-500/40',
+        textColor: 'text-amber-300',
+        icon: Trophy,
+      };
+    case 'BUENO':
+      return {
+        label: 'Bueno',
+        title: 'Desempeño Bueno',
+        description: 'Buen conocimiento táctico. Resuelve adecuadamente la mayoría de situaciones planteadas.',
+        badgeBg: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/40',
+        cardBg: 'from-emerald-950/40 via-teal-900/30 to-black/60 border-emerald-500/40',
+        textColor: 'text-emerald-300',
+        icon: ShieldCheck,
+      };
+    case 'REGULAR':
+      return {
+        label: 'Regular',
+        title: 'Desempeño Regular',
+        description: 'Conocimiento intermedio. Presenta dudas en conceptos de sistemas ofensivos o defensivos.',
+        badgeBg: 'bg-blue-400/20 text-blue-300 border-blue-400/40',
+        cardBg: 'from-blue-950/40 via-cyan-900/30 to-black/60 border-blue-500/40',
+        textColor: 'text-blue-300',
+        icon: Sparkles,
+      };
+    case 'MALO':
+      return {
+        label: 'Malo',
+        title: 'Desempeño Insuficiente',
+        description: 'Conocimiento táctico incipiente. Requiere instrucción en fundamentos tácticos básicos.',
+        badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        cardBg: 'from-rose-950/40 via-stone-900/40 to-black/60 border-rose-500/40',
+        textColor: 'text-rose-300',
+        icon: Award,
+      };
     case 'PROFESIONAL':
       return {
         label: 'Profesional',

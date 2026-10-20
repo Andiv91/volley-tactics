@@ -85,6 +85,7 @@ model Test {
   phase                 String         @default("TEORICO") // "TEORICO" | "DECISION_VIDEO" | "INTEGRAL"
   durationMinutes       Int            @default(20)
   passingScore          Int            @default(70)
+  scaleType             String         @default("3_TIER") // "3_TIER" | "4_TIER"
   competentThreshold    Int            @default(60) // Umbral mínimo para nivel Competente (%)
   professionalThreshold Int            @default(85) // Umbral mínimo para nivel Profesional (%)
   isActive              Boolean        @default(true)

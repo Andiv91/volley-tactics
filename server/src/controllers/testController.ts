@@ -33,6 +33,7 @@ export const getTests = async (req: AuthRequest, res: Response) => {
         phase: t.phase,
         durationMinutes: t.durationMinutes,
         passingScore: t.passingScore,
+        scaleType: (t as any).scaleType || '3_TIER',
         competentThreshold: (t as any).competentThreshold ?? 60,
         professionalThreshold: (t as any).professionalThreshold ?? 85,
         isActive: t.isActive,
@@ -67,6 +68,7 @@ export const getTests = async (req: AuthRequest, res: Response) => {
           phase: t.phase,
           durationMinutes: t.durationMinutes,
           passingScore: t.passingScore,
+          scaleType: t.scaleType || '3_TIER',
           competentThreshold: t.competentThreshold ?? 60,
           professionalThreshold: t.professionalThreshold ?? 85,
           isActive: t.isActive,
@@ -134,6 +136,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
           phase: test.phase,
           durationMinutes: test.durationMinutes,
           passingScore: test.passingScore,
+          scaleType: (test as any).scaleType || '3_TIER',
           competentThreshold: (test as any).competentThreshold ?? 60,
           professionalThreshold: (test as any).professionalThreshold ?? 85,
           isActive: test.isActive,
@@ -170,6 +173,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
       return res.json({
         test: {
           ...test,
+          scaleType: test.scaleType || '3_TIER',
           competentThreshold: test.competentThreshold ?? 60,
           professionalThreshold: test.professionalThreshold ?? 85,
           questions,
@@ -190,6 +194,7 @@ export const createTest = async (req: Request, res: Response) => {
       phase,
       durationMinutes,
       passingScore,
+      scaleType = '3_TIER',
       competentThreshold,
       professionalThreshold,
       questionIds,
@@ -199,6 +204,7 @@ export const createTest = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Título y al menos una pregunta son requeridos' });
     }
 
+    const normalizedScale = scaleType === '4_TIER' ? '4_TIER' : '3_TIER';
     const compThresh = Math.max(1, Math.min(98, Number(competentThreshold) || 60));
     const profThresh = Math.max(compThresh + 1, Math.min(100, Number(professionalThreshold) || 85));
 
@@ -210,6 +216,7 @@ export const createTest = async (req: Request, res: Response) => {
           phase: phase || 'INTEGRAL',
           durationMinutes: Number(durationMinutes) || 15,
           passingScore: Number(passingScore) || 70,
+          scaleType: normalizedScale,
           competentThreshold: compThresh,
           professionalThreshold: profThresh,
           testQuestions: {
@@ -229,6 +236,7 @@ export const createTest = async (req: Request, res: Response) => {
         phase: phase || 'INTEGRAL',
         durationMinutes: Number(durationMinutes) || 15,
         passingScore: Number(passingScore) || 70,
+        scaleType: normalizedScale,
         competentThreshold: compThresh,
         professionalThreshold: profThresh,
         isActive: true,

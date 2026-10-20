@@ -96,6 +96,7 @@ export interface TestEntity {
   phase: string;
   durationMinutes: number;
   passingScore: number;
+  scaleType?: string; // '3_TIER' | '4_TIER'
   competentThreshold?: number;
   professionalThreshold?: number;
   isActive: boolean;
@@ -125,7 +126,7 @@ export interface SubmissionEntity {
   maxScore: number;
   percentage: number;
   passed: boolean;
-  performanceLevel?: 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL';
+  performanceLevel?: 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL' | 'EXCELENTE' | 'BUENO' | 'REGULAR' | 'MALO' | string;
   timeSpentSeconds: number;
   answers: SubmissionAnswerEntity[];
   createdAt: string;

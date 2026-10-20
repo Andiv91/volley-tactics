@@ -165,6 +165,7 @@ export const api = {
     phase?: string;
     durationMinutes?: number;
     passingScore?: number;
+    scaleType?: string;
     competentThreshold?: number;
     professionalThreshold?: number;
     questionIds: string[];

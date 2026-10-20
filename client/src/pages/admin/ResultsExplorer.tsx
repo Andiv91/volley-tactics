@@ -170,14 +170,29 @@ export const ResultsExplorer: React.FC = () => {
     ? Math.round(teamSubmissions.reduce((acc, s) => acc + s.percentage, 0) / totalTeamEvaluations)
     : 0;
 
+  const has4Tier = teamSubmissions.some((s) =>
+    ['EXCELENTE', 'BUENO', 'REGULAR', 'MALO'].includes(s.performanceLevel || '')
+  );
+
   let teamOverallLevel: PerformanceLevel = 'PRINCIPIANTE';
-  if (avgTeamScore >= 85) teamOverallLevel = 'PROFESIONAL';
-  else if (avgTeamScore >= 60) teamOverallLevel = 'COMPETENTE';
+  if (has4Tier) {
+    if (avgTeamScore >= 75) teamOverallLevel = 'EXCELENTE';
+    else if (avgTeamScore >= 50) teamOverallLevel = 'BUENO';
+    else if (avgTeamScore >= 25) teamOverallLevel = 'REGULAR';
+    else teamOverallLevel = 'MALO';
+  } else {
+    if (avgTeamScore >= 85) teamOverallLevel = 'PROFESIONAL';
+    else if (avgTeamScore >= 60) teamOverallLevel = 'COMPETENTE';
+  }
 
   const teamLevelCounts = {
-    principiante: teamSubmissions.filter((s) => s.performanceLevel === 'PRINCIPIANTE').length,
-    competente: teamSubmissions.filter((s) => s.performanceLevel === 'COMPETENTE').length,
+    excelente: teamSubmissions.filter((s) => s.performanceLevel === 'EXCELENTE').length,
+    bueno: teamSubmissions.filter((s) => s.performanceLevel === 'BUENO').length,
+    regular: teamSubmissions.filter((s) => s.performanceLevel === 'REGULAR').length,
+    malo: teamSubmissions.filter((s) => s.performanceLevel === 'MALO').length,
     profesional: teamSubmissions.filter((s) => s.performanceLevel === 'PROFESIONAL').length,
+    competente: teamSubmissions.filter((s) => s.performanceLevel === 'COMPETENTE').length,
+    principiante: teamSubmissions.filter((s) => s.performanceLevel === 'PRINCIPIANTE').length,
   };
 
   if (loading) {
@@ -213,9 +228,9 @@ export const ResultsExplorer: React.FC = () => {
       </div>
 
       {/* Filter Bar with Team Search & Select */}
-      <div className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/15 shadow-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/15 shadow-xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Search by athlete, test, or team name */}
-        <div className="relative lg:col-span-2">
+        <div className="relative sm:col-span-2">
           <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
           <input
             type="text"
@@ -273,6 +288,24 @@ export const ResultsExplorer: React.FC = () => {
             ))}
           </select>
         </div>
+
+        {/* Level Filter */}
+        <div>
+          <select
+            value={selectedLevelFilter}
+            onChange={(e) => setSelectedLevelFilter(e.target.value)}
+            className="w-full px-3.5 py-2 rounded-2xl bg-black/40 border border-white/15 text-white text-xs font-semibold"
+          >
+            <option value="">Todos los Niveles</option>
+            <option value="EXCELENTE">Excelente (≥75%)</option>
+            <option value="BUENO">Bueno (50-74%)</option>
+            <option value="REGULAR">Regular (25-49%)</option>
+            <option value="MALO">Malo (&lt;25%)</option>
+            <option value="PROFESIONAL">Profesional</option>
+            <option value="COMPETENTE">Competente</option>
+            <option value="PRINCIPIANTE">Principiante</option>
+          </select>
+        </div>
       </div>
 
       {/* Panel de Resultados Consolidados por Equipo (cuando se filtra un equipo) */}
@@ -328,16 +361,35 @@ export const ResultsExplorer: React.FC = () => {
               <span className="text-[10px] text-stone-400 uppercase font-bold block mb-1">
                 Distribución por Niveles
               </span>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  {teamLevelCounts.profesional} Profesional
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  {teamLevelCounts.competente} Competente
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  {teamLevelCounts.principiante} Principiante
-                </span>
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {has4Tier ? (
+                  <>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {teamLevelCounts.excelente} Excelente
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {teamLevelCounts.bueno} Bueno
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      {teamLevelCounts.regular} Regular
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      {teamLevelCounts.malo} Malo
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {teamLevelCounts.profesional} Profesional
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      {teamLevelCounts.competente} Competente
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {teamLevelCounts.principiante} Principiante
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
