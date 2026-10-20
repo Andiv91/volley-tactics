@@ -120,8 +120,8 @@ export const AthleteHistoryPage: React.FC<AthleteHistoryPageProps> = ({ onInspec
                         {sub.percentage}%
                       </span>
                     </div>
-                    <span className="text-[10px] text-stone-400 block">
-                      {sub.score} de {sub.maxScore} aciertos
+                    <span className="text-[10px] text-stone-300 block font-medium">
+                      {sub.score} de {sub.maxScore} aciertos ({sub.percentage}% de conocimiento)
                     </span>
                   </div>
 

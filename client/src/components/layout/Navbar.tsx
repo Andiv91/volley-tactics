@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Users,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -198,6 +199,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
                 >
                   <PieChart className="w-3.5 h-3.5" />
                   <span>Gráficos</span>
+                </button>
+
+                <button
+                  onClick={() => onTabChange('admin-formats')}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                    currentTab === 'admin-formats'
+                      ? 'bg-white text-rose-800 shadow-md'
+                      : 'text-rose-100 hover:bg-white/10'
+                  }`}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Formato Sesión</span>
                 </button>
               </>
             ) : (
@@ -405,6 +418,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
                 }`}
               >
                 Gráficos Circulares
+              </button>
+              <button
+                onClick={() => {
+                  onTabChange('admin-formats');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
+                  currentTab === 'admin-formats' ? 'bg-white text-rose-800' : 'text-rose-100'
+                }`}
+              >
+                Formatos de Sesión & Video
               </button>
             </>
           ) : (

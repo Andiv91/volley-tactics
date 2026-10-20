@@ -84,9 +84,9 @@ export const AthleteDashboard: React.FC<AthleteDashboardProps> = ({ onStartTest,
               <span className="text-[11px] font-semibold text-rose-200 uppercase">Completados</span>
             </div>
 
-            <div className="bg-black/30 border border-white/10 rounded-2xl p-4 text-center min-w-[110px]">
+            <div className="bg-black/30 border border-white/10 rounded-2xl p-4 text-center min-w-[130px]">
               <span className="block text-2xl font-black text-emerald-400">{avgScore}%</span>
-              <span className="text-[11px] font-semibold text-rose-200 uppercase">Efectividad</span>
+              <span className="text-[10px] font-semibold text-rose-200 uppercase">% Conocimiento (0-100%)</span>
             </div>
           </div>
         </div>

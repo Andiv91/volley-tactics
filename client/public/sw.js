@@ -1,5 +1,5 @@
 // VoleiTactics Service Worker - Network-First Strategy with Instant Cache Buster
-const CACHE_NAME = 'voleitactics-cache-v8';
+const CACHE_NAME = 'voleitactics-cache-v9';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

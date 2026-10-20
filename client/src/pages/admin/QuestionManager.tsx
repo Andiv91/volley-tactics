@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { Question, Category, Option } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
 import { MediaViewer } from '../../components/media/MediaViewer';
+import { formatQuestionComplexity } from '../../utils/tacticsFormatters';
 import {
   Plus,
   Trash2,
@@ -257,9 +258,14 @@ export const QuestionManager: React.FC = () => {
                       >
                         {q.category?.name || 'Categoría'}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-black/40 text-[10px] font-semibold text-rose-200">
-                        {q.difficulty}
-                      </span>
+                      {(() => {
+                        const comp = formatQuestionComplexity(q.difficulty);
+                        return (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${comp.badgeClass}`}>
+                            {comp.label}
+                          </span>
+                        );
+                      })()}
                       <span className="px-2 py-0.5 rounded bg-black/40 text-[10px] font-semibold text-rose-200">
                         {q.phase}
                       </span>
@@ -396,16 +402,16 @@ export const QuestionManager: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-rose-200 uppercase mb-1">
-                    Dificultad
+                    Complejidad de la Situación
                   </label>
                   <select
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-stone-800 border border-white/15 text-white text-xs font-medium focus:ring-2 focus:ring-rose-500"
                   >
-                    <option value="PRINCIPIANTE">Principiante</option>
-                    <option value="INTERMEDIO">Intermedio</option>
-                    <option value="AVANZADO">Avanzado</option>
+                    <option value="PRINCIPIANTE">Situación de Baja Complejidad</option>
+                    <option value="INTERMEDIO">Situación de Mediana Complejidad</option>
+                    <option value="AVANZADO">Situación de Alta Complejidad</option>
                   </select>
                 </div>
 

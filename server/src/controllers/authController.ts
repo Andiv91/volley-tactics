@@ -220,7 +220,7 @@ export const googleAuth = async (req: Request, res: Response) => {
 
     // 1. Si viene en modo LOGIN (o sin especificar modo de registro) y el usuario NO existe:
     if (!user && mode !== 'register') {
-      return res.status(404).json({
+      return res.json({
         notRegistered: true,
         googleProfile: {
           email,

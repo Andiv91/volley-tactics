@@ -13,6 +13,7 @@ import { TestManager } from './pages/admin/TestManager';
 import { ResultsExplorer } from './pages/admin/ResultsExplorer';
 import { AnalyticsPage } from './pages/admin/AnalyticsPage';
 import { UserManager } from './pages/admin/UserManager';
+import { TacticalSessionFormatPage } from './pages/admin/TacticalSessionFormatPage';
 import { Navbar } from './components/layout/Navbar';
 import { VolleyballLoader } from './components/ui/VolleyballLoader';
 import { VolleyballHeroBackground } from './components/layout/VolleyballHeroBackground';
@@ -230,6 +231,8 @@ const AppContent: React.FC = () => {
             {activeTabName === 'admin-results' && <ResultsExplorer />}
 
             {activeTabName === 'admin-analytics' && <AnalyticsPage />}
+
+            {activeTabName === 'admin-formats' && <TacticalSessionFormatPage />}
           </>
         )}
       </main>

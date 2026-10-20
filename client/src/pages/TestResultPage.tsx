@@ -4,6 +4,7 @@ import { Submission } from '../types';
 import { VolleyballLogo } from '../components/ui/VolleyballLoader';
 import { MediaViewer } from '../components/media/MediaViewer';
 import { PerformanceBadge, getPerformanceConfig } from '../components/ui/PerformanceBadge';
+import { formatQuestionComplexity } from '../utils/tacticsFormatters';
 import {
   CheckCircle2,
   XCircle,
@@ -102,19 +103,22 @@ export const TestResultPage: React.FC<TestResultPageProps> = ({
           </div>
 
           {/* Big Circular Score Badge */}
-          <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-black/40 border border-white/20 min-w-[170px] shadow-2xl">
+          <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-black/40 border border-white/20 min-w-[210px] shadow-2xl text-center">
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-300 mb-1">
+              % Conocimiento Táctico
+            </span>
             <span
-              className={`text-5xl font-black tracking-tight ${
+              className={`text-5xl sm:text-6xl font-black tracking-tight ${
                 passed ? 'text-emerald-400' : 'text-rose-400'
               }`}
             >
               {percentage}%
             </span>
-            <span className="text-xs font-bold text-stone-300 uppercase tracking-wider mt-1">
-              {score} de {maxScore} puntos
+            <span className="text-xs font-bold text-stone-300 uppercase tracking-wider mt-1.5">
+              {score} de {maxScore} aciertos
             </span>
-            <span className="text-[10px] text-stone-400 mt-0.5">
-              Tiempo: {Math.round((submission.timeSpentSeconds || 0) / 60)} min
+            <span className="text-[10px] text-stone-400 mt-0.5 font-mono">
+              Escala de 0 a 100% • {Math.round((submission.timeSpentSeconds || 0) / 60)} min
             </span>
           </div>
 
@@ -220,6 +224,14 @@ export const TestResultPage: React.FC<TestResultPageProps> = ({
                     <span className="px-2.5 py-0.5 rounded-full bg-black/40 text-[10px] font-bold text-rose-200 uppercase">
                       {categoryName}
                     </span>
+                    {(() => {
+                      const comp = formatQuestionComplexity(ans.questionDifficulty || ans.question?.difficulty);
+                      return (
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${comp.badgeClass}`}>
+                          {comp.label}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex items-center space-x-1.5 text-xs font-black uppercase">

@@ -4,6 +4,7 @@ import { AnalyticsData, User, Team } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
 import { TopicPieChart } from '../../components/charts/TopicPieChart';
 import { PerformanceBadge } from '../../components/ui/PerformanceBadge';
+import { formatQuestionComplexity } from '../../utils/tacticsFormatters';
 import {
   PieChart as PieChartIcon,
   User as UserIcon,
@@ -264,33 +265,30 @@ export const AnalyticsPage: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/15 shadow-xl space-y-4">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-rose-400" />
-                <span>Efectividad por Dificultad</span>
+                <span>Efectividad por Complejidad de Situación</span>
               </h3>
 
               <div className="space-y-4 pt-1">
-                {analytics.difficultyBreakdown.map((item, idx) => (
-                  <div key={idx} className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-semibold">
-                      <span className="text-stone-200">{item.difficulty}</span>
-                      <span className="text-white font-black">{item.accuracy}%</span>
+                {analytics.difficultyBreakdown.map((item, idx) => {
+                  const comp = formatQuestionComplexity(item.difficulty);
+                  return (
+                    <div key={idx} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span className="text-stone-200">{comp.label}</span>
+                        <span className="text-white font-black">{item.accuracy}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${item.accuracy}%`, backgroundColor: comp.color }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-stone-400 block text-right">
+                        {item.totalAnswered} respuestas evaluadas
+                      </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          item.difficulty === 'PRINCIPIANTE'
-                            ? 'bg-emerald-500'
-                            : item.difficulty === 'INTERMEDIO'
-                            ? 'bg-blue-500'
-                            : 'bg-rose-500'
-                        }`}
-                        style={{ width: `${item.accuracy}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-stone-400 block text-right">
-                      {item.totalAnswered} respuestas evaluadas
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

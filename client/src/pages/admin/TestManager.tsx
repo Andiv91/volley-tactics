@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { TestSummary, Question } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
+import { formatQuestionComplexity } from '../../utils/tacticsFormatters';
 import {
   ClipboardList,
   Plus,
@@ -526,7 +527,7 @@ export const TestManager: React.FC = () => {
                             <span className="text-[10px] text-rose-300 font-bold">
                               {q.category?.name || 'General'}
                             </span>
-                            <span className="text-[10px] text-stone-400">• {q.difficulty}</span>
+                            <span className="text-[10px] text-stone-400">• {formatQuestionComplexity(q.difficulty).shortLabel}</span>
                           </div>
                         </div>
                       </div>

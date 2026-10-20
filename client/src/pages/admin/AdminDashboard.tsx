@@ -94,7 +94,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </h1>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => onNavigate('admin-formats')}
+            className="px-4 py-2 rounded-full bg-white text-rose-900 hover:bg-stone-100 text-xs font-extrabold uppercase tracking-wider shadow-lg transition-all"
+          >
+            Formato de Sesión & Video
+          </button>
           <button
             onClick={() => onNavigate('admin-questions')}
             className="px-4 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg transition-all"
@@ -147,7 +153,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-bold text-rose-200 uppercase">Promedio Global</span>
+            <span className="text-xs font-bold text-rose-200 uppercase">% Conocimiento (0-100%)</span>
             <p className="text-2xl font-black text-white">{kpis.averageScore}%</p>
           </div>
         </div>

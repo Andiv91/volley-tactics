@@ -9,6 +9,24 @@ interface LoginPageProps {
   onSwitchToRegister: (googleProfile?: any) => void;
 }
 
+function decodeJwt(token?: string) {
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   const { login, googleAuth, quickLoginDemo, isLoading } = useAuth();
   const [email, setEmail] = useState('');
@@ -38,36 +56,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setError(null);
-    if (!credentialResponse.credential) {
+    if (!credentialResponse?.credential) {
       setError('No se recibió la credencial de Google.');
       return;
     }
+
+    const decoded = decodeJwt(credentialResponse.credential);
+
     try {
       const res = await googleAuth({
         credential: credentialResponse.credential,
         mode: 'login',
       });
       if (res?.notRegistered) {
-        setUnregisteredGoogle(res.googleProfile || {
-          email: 'tu cuenta de Google',
+        setUnregisteredGoogle({
+          email: res.googleProfile?.email || decoded?.email || 'tu cuenta de Google',
+          name: res.googleProfile?.name || decoded?.name || 'Usuario Google',
+          avatarUrl: res.googleProfile?.avatarUrl || decoded?.picture,
           credential: credentialResponse.credential,
         });
       }
     } catch (err: any) {
-      if (
-        err.notRegistered ||
-        err.message?.includes('No se encontró ninguna cuenta') ||
-        err.message?.includes('Aún no tienes')
-      ) {
-        setUnregisteredGoogle(
-          err.googleProfile || {
-            email: 'tu cuenta de Google',
-            credential: credentialResponse.credential,
-          }
-        );
-      } else {
-        setError(err.message || 'Error al autenticar con Google');
-      }
+      setUnregisteredGoogle({
+        email: decoded?.email || 'tu cuenta de Google',
+        name: decoded?.name || 'Usuario Google',
+        avatarUrl: decoded?.picture,
+        credential: credentialResponse.credential,
+      });
     }
   };
 

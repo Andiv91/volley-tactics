@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { TestDetail, Question } from '../types';
 import { MediaViewer } from '../components/media/MediaViewer';
 import { VolleyballLoader, VolleyballLogo } from '../components/ui/VolleyballLoader';
+import { formatQuestionComplexity } from '../utils/tacticsFormatters';
 import {
   Clock,
   ArrowRight,
@@ -183,9 +184,14 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
               </span>
             )}
 
-            <span className="px-3 py-1 rounded-full bg-black/30 border border-white/15 text-xs font-semibold text-rose-200 uppercase tracking-wider">
-              Dificultad: {currentQuestion.difficulty}
-            </span>
+            {(() => {
+              const comp = formatQuestionComplexity(currentQuestion.difficulty);
+              return (
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${comp.badgeClass}`}>
+                  {comp.label}
+                </span>
+              );
+            })()}
 
             <span className="px-3 py-1 rounded-full bg-black/30 border border-white/15 text-xs font-semibold text-rose-200 uppercase tracking-wider">
               Fase: {currentQuestion.phase}

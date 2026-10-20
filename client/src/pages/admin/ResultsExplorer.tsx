@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { Submission, User, TestSummary, Team, PerformanceLevel } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
 import { PerformanceBadge } from '../../components/ui/PerformanceBadge';
+import { formatQuestionComplexity } from '../../utils/tacticsFormatters';
 import {
   FileCheck2,
   Search,
@@ -417,10 +418,13 @@ export const ResultsExplorer: React.FC = () => {
 
             <div className="p-3 rounded-2xl bg-black/30 border border-white/10">
               <span className="text-[10px] text-stone-400 uppercase font-bold block">
-                Asertividad Promedio
+                % Conocimiento Táctico Promedio
               </span>
               <span className="text-xl font-black text-rose-300 mt-1 block">
                 {avgTeamScore}%
+              </span>
+              <span className="text-[9px] text-stone-400 block font-mono">
+                Escala de 0 a 100%
               </span>
             </div>
 
@@ -472,7 +476,7 @@ export const ResultsExplorer: React.FC = () => {
                 <th className="py-4 px-6">Atleta & Equipo</th>
                 <th className="py-4 px-6">Evaluación</th>
                 <th className="py-4 px-6">Fecha</th>
-                <th className="py-4 px-6">Efectividad</th>
+                <th className="py-4 px-6">% Conocimiento (0-100%)</th>
                 <th className="py-4 px-6">Nivel Táctico</th>
                 <th className="py-4 px-6">Estado</th>
                 <th className="py-4 px-6 text-right">Auditar Respuestas</th>
@@ -538,8 +542,8 @@ export const ResultsExplorer: React.FC = () => {
                         <span className="font-black text-sm text-white">
                           {sub.percentage}%
                         </span>
-                        <span className="text-[10px] text-stone-400 block">
-                          {sub.score}/{sub.maxScore} pts
+                        <span className="text-[10px] text-stone-400 block font-mono">
+                          {sub.score}/{sub.maxScore} aciertos
                         </span>
                       </td>
 
@@ -846,7 +850,7 @@ export const ResultsExplorer: React.FC = () => {
                     </span>
                   )}
                   <span className="text-stone-500">•</span>
-                  <span>Efectividad: {auditSubmission.percentage}%</span>
+                  <span>% Conocimiento: <strong className="text-white">{auditSubmission.percentage}%</strong> (0-100%)</span>
                   <span className="text-stone-500">•</span>
                   <PerformanceBadge level={auditSubmission.performanceLevel} size="sm" />
                   <span className="text-stone-500">•</span>
@@ -879,9 +883,19 @@ export const ResultsExplorer: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-black text-white">
-                        Pregunta #{idx + 1}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-black text-white">
+                          Pregunta #{idx + 1}
+                        </span>
+                        {(() => {
+                          const comp = formatQuestionComplexity(ans.question?.difficulty);
+                          return (
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${comp.badgeClass}`}>
+                              {comp.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
                       <span
                         className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
                           isCorrect ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
