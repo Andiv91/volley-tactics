@@ -28,7 +28,7 @@ function decodeJwt(token?: string) {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
-  const { login, googleAuth, quickLoginDemo, isLoading } = useAuth();
+  const { login, googleAuth, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -242,44 +242,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                 <div className="flex-grow border-t border-white/20"></div>
               </div>
 
-              {/* Google OAuth Button */}
-              <div className="w-full flex flex-col items-center justify-center space-y-2">
-                <div className="w-full flex justify-center overflow-hidden rounded-full shadow-lg bg-white p-0.5">
+              {/* Google OAuth Button (Centered & Responsive on Mobile) */}
+              <div className="w-full flex items-center justify-center pt-1">
+                <div className="flex items-center justify-center max-w-full overflow-hidden rounded-full shadow-lg bg-white p-0.5">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={() => setError('No se pudo conectar con el servicio de Google')}
                     shape="pill"
                     size="large"
-                    width="360"
                     text="continue_with"
                     locale="es"
                   />
-                </div>
-              </div>
-
-              {/* 1-Click Quick Demo Switcher (Instant Evaluation for Coach / Athlete) */}
-              <div className="pt-3 rounded-2xl bg-black/25 p-3 border border-white/10">
-                <p className="text-[11px] font-bold text-rose-200 uppercase tracking-wider mb-2 text-center">
-                  Acceso Rápido de Prueba (1-Click)
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => quickLoginDemo('ADMIN')}
-                    className="py-1.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Entrenador / Admin</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => quickLoginDemo('USER')}
-                    className="py-1.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all"
-                  >
-                    <UserCheck className="w-3.5 h-3.5 text-rose-300" />
-                    <span>Atleta / Usuario</span>
-                  </button>
                 </div>
               </div>
 

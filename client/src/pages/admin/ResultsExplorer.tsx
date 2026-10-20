@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Submission, User, TestSummary, Team, PerformanceLevel } from '../../types';
 import { VolleyballLoader } from '../../components/ui/VolleyballLoader';
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 
 export const ResultsExplorer: React.FC = () => {
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [tests, setTests] = useState<TestSummary[]>([]);
@@ -316,12 +318,35 @@ export const ResultsExplorer: React.FC = () => {
             onChange={(e) => setSelectedTeamFilter(e.target.value)}
             className="w-full px-3.5 py-2 rounded-2xl bg-black/40 border border-white/15 text-white text-xs font-semibold"
           >
-            <option value="">Todos los Equipos</option>
-            {teams.map((tm) => (
-              <option key={tm.id} value={tm.id}>
-                {tm.name} ({tm.memberCount || 0} integrantes)
-              </option>
-            ))}
+            <option value="">
+              {user?.role === 'COACH' ? 'Todos Mis Grupos de Estudiantes' : 'Todos los Equipos'}
+            </option>
+            {user?.role === 'COACH' ? (
+              <>
+                <optgroup label="Mis Grupos Creados">
+                  {teams.filter(t => t.createdById === user?.id).map((tm) => (
+                    <option key={tm.id} value={tm.id}>
+                      {tm.name} ({tm.memberCount || 0} int.)
+                    </option>
+                  ))}
+                </optgroup>
+                {teams.some(t => t.createdById !== user?.id) && (
+                  <optgroup label="Otros Grupos">
+                    {teams.filter(t => t.createdById !== user?.id).map((tm) => (
+                      <option key={tm.id} value={tm.id}>
+                        {tm.name} ({tm.memberCount || 0} int.) {tm.createdBy?.name ? `• Prof. ${tm.createdBy.name}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </>
+            ) : (
+              teams.map((tm) => (
+                <option key={tm.id} value={tm.id}>
+                  {tm.name} ({tm.memberCount || 0} int.) {tm.createdBy?.name ? `• Prof. ${tm.createdBy.name}` : ''}
+                </option>
+              ))
+            )}
           </select>
         </div>
 

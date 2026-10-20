@@ -4,10 +4,17 @@ import { AuthRequest } from '../middleware/auth';
 
 export const getAnalytics = async (req: AuthRequest, res: Response) => {
   try {
-    const isAdmin = req.user?.role === 'ADMIN';
-    // Si no es admin, solo puede consultar sus propias estadísticas
-    const targetUserId = !isAdmin ? req.user?.id : (req.query.userId ? String(req.query.userId) : undefined);
+    const isSuperAdmin = req.user?.role === 'ADMIN';
+    const isCoach = req.user?.role === 'COACH';
+    const isStaff = isSuperAdmin || isCoach;
+
     const targetTeamId = req.query.teamId ? String(req.query.teamId) : undefined;
+    let targetUserId = req.query.userId ? String(req.query.userId) : undefined;
+
+    if (!isStaff) {
+      // Estudiante: solo sus propias estadísticas
+      targetUserId = req.user?.id;
+    }
 
     let allSubmissions: any[] = [];
     let categories: any[] = [];
@@ -17,6 +24,27 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
 
     if (isPrismaAvailable && prisma) {
       let whereClause: any = {};
+      let coachStudentIds: string[] = [];
+
+      if (isCoach) {
+        const coachTeams = await prisma.team.findMany({
+          where: { createdById: req.user?.id },
+          select: { id: true },
+        });
+        const coachTeamIds = coachTeams.map(t => t.id);
+        const teamMembers = await prisma.teamMember.findMany({
+          where: { teamId: { in: coachTeamIds } },
+          select: { userId: true },
+        });
+        const directUsers = await prisma.user.findMany({
+          where: { teamId: { in: coachTeamIds } },
+          select: { id: true },
+        });
+        coachStudentIds = Array.from(
+          new Set([...teamMembers.map(tm => tm.userId), ...directUsers.map(u => u.id)])
+        );
+      }
+
       if (targetUserId) {
         whereClause.userId = targetUserId;
       } else if (targetTeamId) {
@@ -32,6 +60,8 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
           new Set([...teamMembers.map(tm => tm.userId), ...directUsers.map(u => u.id)])
         );
         whereClause.userId = { in: memberIds };
+      } else if (isCoach) {
+        whereClause.userId = { in: coachStudentIds };
       }
 
       allSubmissions = await prisma.submission.findMany({
@@ -54,10 +84,22 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       });
 
       categories = await prisma.category.findMany();
-      allUsers = await prisma.user.findMany({ where: { role: 'USER' } });
+      allUsers = isCoach
+        ? await prisma.user.findMany({ where: { id: { in: coachStudentIds } } })
+        : await prisma.user.findMany({ where: { role: 'USER' } });
       allTests = await prisma.test.findMany();
-      allTeams = await prisma.team.findMany({ select: { id: true, name: true, description: true } });
+      allTeams = isCoach
+        ? await prisma.team.findMany({ where: { createdById: req.user?.id }, select: { id: true, name: true, description: true } })
+        : await prisma.team.findMany({ select: { id: true, name: true, description: true } });
     } else {
+      let coachStudentIds: string[] = [];
+      if (isCoach) {
+        const coachTeamIds = (memoryDb.teams || []).filter(t => t.createdById === req.user?.id).map(t => t.id);
+        const directUserIds = memoryDb.users.filter(u => u.teamId && coachTeamIds.includes(u.teamId)).map(u => u.id);
+        const tmUserIds = (memoryDb.teamMembers || []).filter(tm => coachTeamIds.includes(tm.teamId)).map(tm => tm.userId);
+        coachStudentIds = Array.from(new Set([...directUserIds, ...tmUserIds]));
+      }
+
       allSubmissions = memoryDb.submissions.filter(s => {
         if (targetUserId) return s.userId === targetUserId;
         if (targetTeamId) {
@@ -66,12 +108,19 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
           const memberIds = new Set([...directUserIds, ...tmUserIds]);
           return memberIds.has(s.userId);
         }
+        if (isCoach) {
+          return coachStudentIds.includes(s.userId);
+        }
         return true;
       });
       categories = memoryDb.categories;
-      allUsers = memoryDb.users.filter(u => u.role === 'USER');
+      allUsers = isCoach
+        ? memoryDb.users.filter(u => coachStudentIds.includes(u.id))
+        : memoryDb.users.filter(u => u.role === 'USER');
       allTests = memoryDb.tests;
-      allTeams = (memoryDb.teams || []).map(t => ({ id: t.id, name: t.name, description: t.description }));
+      allTeams = isCoach
+        ? (memoryDb.teams || []).filter(t => t.createdById === req.user?.id).map(t => ({ id: t.id, name: t.name, description: t.description }))
+        : (memoryDb.teams || []).map(t => ({ id: t.id, name: t.name, description: t.description }));
     }
 
     // 1. Overall KPIs

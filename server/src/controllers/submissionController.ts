@@ -195,18 +195,19 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
     const user = req.user;
     if (!user) return res.status(401).json({ message: 'No autenticado' });
 
-    const isAdmin = user.role === 'ADMIN';
+    const isSuperAdmin = user.role === 'ADMIN';
+    const isCoach = user.role === 'COACH';
+    const isStaff = isSuperAdmin || isCoach;
     const { userId: filterUserId, testId, teamId } = req.query;
 
     if (isPrismaAvailable && prisma) {
       const where: any = {};
-      if (!isAdmin) {
+
+      if (!isStaff) {
+        // Estudiante / Atleta: Solo ve sus propias entregas
         where.userId = user.id;
-      } else if (filterUserId) {
-        where.userId = String(filterUserId);
-      }
-      if (testId) where.testId = String(testId);
-      if (teamId) {
+      } else if (teamId) {
+        // Filtro explícito por equipo
         const teamMembers = await prisma.teamMember.findMany({
           where: { teamId: String(teamId) },
           select: { userId: true },
@@ -219,7 +220,40 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
           new Set([...teamMembers.map(tm => tm.userId), ...directUsers.map(u => u.id)])
         );
         where.userId = { in: memberIds };
+        if (filterUserId) {
+          where.userId = String(filterUserId);
+        }
+      } else if (isCoach) {
+        // Técnico / Profesor: ve únicamente los estudiantes de los equipos que él creó
+        const coachTeams = await prisma.team.findMany({
+          where: { createdById: user.id },
+          select: { id: true },
+        });
+        const coachTeamIds = coachTeams.map(t => t.id);
+        const teamMembers = await prisma.teamMember.findMany({
+          where: { teamId: { in: coachTeamIds } },
+          select: { userId: true },
+        });
+        const directUsers = await prisma.user.findMany({
+          where: { teamId: { in: coachTeamIds } },
+          select: { id: true },
+        });
+        const coachStudentIds = Array.from(
+          new Set([...teamMembers.map(tm => tm.userId), ...directUsers.map(u => u.id)])
+        );
+
+        if (filterUserId) {
+          where.userId = String(filterUserId);
+        } else {
+          where.userId = { in: coachStudentIds };
+        }
+      } else if (filterUserId) {
+        // Super Admin con filtro de usuario
+        where.userId = String(filterUserId);
       }
+      // Super Admin sin filtro: ve todo
+
+      if (testId) where.testId = String(testId);
 
       const submissions = await prisma.submission.findMany({
         where,
@@ -279,19 +313,23 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
       return res.json({ submissions: formatted });
     } else {
       let list = [...memoryDb.submissions];
-      if (!isAdmin) {
+      if (!isStaff) {
         list = list.filter(s => s.userId === user.id);
-      } else if (filterUserId) {
-        list = list.filter(s => s.userId === filterUserId);
-      }
-      if (testId) {
-        list = list.filter(s => s.testId === testId);
-      }
-      if (teamId) {
+      } else if (teamId) {
         const directUserIds = memoryDb.users.filter(u => u.teamId === teamId).map(u => u.id);
         const tmUserIds = (memoryDb.teamMembers || []).filter(tm => tm.teamId === teamId).map(tm => tm.userId);
         const memberIds = new Set([...directUserIds, ...tmUserIds]);
         list = list.filter(s => memberIds.has(s.userId));
+        if (filterUserId) list = list.filter(s => s.userId === filterUserId);
+      } else if (isCoach) {
+        const coachTeamIds = (memoryDb.teams || []).filter(t => t.createdById === user.id).map(t => t.id);
+        const directUserIds = memoryDb.users.filter(u => u.teamId && coachTeamIds.includes(u.teamId)).map(u => u.id);
+        const tmUserIds = (memoryDb.teamMembers || []).filter(tm => coachTeamIds.includes(tm.teamId)).map(tm => tm.userId);
+        const memberIds = new Set([...directUserIds, ...tmUserIds]);
+        list = list.filter(s => memberIds.has(s.userId));
+        if (filterUserId) list = list.filter(s => s.userId === filterUserId);
+      } else if (filterUserId) {
+        list = list.filter(s => s.userId === filterUserId);
       }
 
       const formatted = list.map(s => {

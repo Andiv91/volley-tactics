@@ -24,11 +24,11 @@ function sortQuestionOptions<T extends { text: string }>(options: T[]): T[] {
 
 export const getTests = async (req: AuthRequest, res: Response) => {
   try {
-    const isAdmin = req.user?.role === 'ADMIN';
+    const isStaff = req.user?.role === 'ADMIN' || req.user?.role === 'COACH';
 
     if (isPrismaAvailable && prisma) {
       const tests = await prisma.test.findMany({
-        where: isAdmin ? {} : { isActive: true },
+        where: isStaff ? {} : { isActive: true },
         include: {
           testQuestions: {
             include: {
@@ -66,7 +66,7 @@ export const getTests = async (req: AuthRequest, res: Response) => {
       return res.json({ tests: formatted });
     } else {
       let list = memoryDb.tests;
-      if (!isAdmin) {
+      if (!isStaff) {
         list = list.filter(t => t.isActive);
       }
 
@@ -110,7 +110,7 @@ export const getTests = async (req: AuthRequest, res: Response) => {
 export const getTestById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const isAdmin = req.user?.role === 'ADMIN';
+    const isStaff = req.user?.role === 'ADMIN' || req.user?.role === 'COACH';
 
     if (isPrismaAvailable && prisma) {
       const test = await prisma.test.findUnique({
@@ -145,7 +145,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
           id: opt.id,
           text: opt.text,
           imageUrl: opt.imageUrl,
-          ...(isAdmin ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
+          ...(isStaff ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
         })),
       }));
 
@@ -186,7 +186,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
               id: opt.id,
               text: opt.text,
               imageUrl: opt.imageUrl,
-              ...(isAdmin ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
+              ...(isStaff ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
             })),
           };
         })

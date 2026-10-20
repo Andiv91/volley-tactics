@@ -95,7 +95,7 @@ export const getTeams = async (req: AuthRequest, res: Response) => {
 
 export const createTeam = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user?.role !== 'ADMIN') {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'COACH') {
       return res.status(403).json({ message: 'Solo administradores o profesores pueden crear equipos' });
     }
 
@@ -177,7 +177,7 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
 
 export const addStudentToTeam = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user?.role !== 'ADMIN') {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'COACH') {
       return res.status(403).json({ message: 'Solo administradores o profesores pueden gestionar integrantes' });
     }
 
@@ -250,7 +250,7 @@ export const addStudentToTeam = async (req: AuthRequest, res: Response) => {
 
 export const removeStudentFromTeam = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user?.role !== 'ADMIN') {
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'COACH') {
       return res.status(403).json({ message: 'Solo administradores o profesores pueden gestionar integrantes' });
     }
 
@@ -342,8 +342,8 @@ export const getAvailableStudents = async (req: AuthRequest, res: Response) => {
 
 export const deleteTeam = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user?.role !== 'ADMIN') {
-      return res.status(403).json({ message: 'Solo administradores pueden eliminar equipos' });
+    if (req.user?.role !== 'ADMIN' && req.user?.role !== 'COACH') {
+      return res.status(403).json({ message: 'Solo administradores o profesores pueden eliminar equipos' });
     }
 
     const { id } = req.params;

@@ -130,6 +130,10 @@ export const AthleteTeamPage: React.FC = () => {
                         {team.description}
                       </p>
                     )}
+                    <div className="flex items-center space-x-1.5 text-[11px] text-amber-300 font-semibold bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 mt-2.5">
+                      <UserCheck className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                      <span>Técnico: <strong className="text-white">{team.createdBy?.name || 'Cuerpo Técnico'}</strong></span>
+                    </div>
                   </div>
 
                   <button
@@ -163,6 +167,10 @@ export const AthleteTeamPage: React.FC = () => {
                     {myTeam.description}
                   </p>
                 )}
+                <div className="inline-flex items-center space-x-1.5 text-xs text-amber-300 font-semibold bg-amber-500/15 px-3 py-1 rounded-full border border-amber-500/30 mt-2">
+                  <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Técnico a cargo: <strong className="text-white">{myTeam.createdBy?.name || 'Cuerpo Técnico'}</strong></span>
+                </div>
               </div>
 
               {/* Distintivo de Nivel Táctico Grupal */}
@@ -335,9 +343,16 @@ export const AthleteTeamPage: React.FC = () => {
                       {t.description && (
                         <p className="text-xs text-stone-300 mt-0.5">{t.description}</p>
                       )}
-                      <span className="text-[10px] text-stone-400 block mt-1">
-                        {t.memberCount || 0} integrantes
-                      </span>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[10px] text-stone-400">
+                          {t.memberCount || 0} integrantes
+                        </span>
+                        <span className="text-stone-500">•</span>
+                        <span className="text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+                          <UserCheck className="w-3 h-3 text-amber-400" />
+                          <span>Técnico: {t.createdBy?.name || 'Cuerpo Técnico'}</span>
+                        </span>
+                      </div>
                     </div>
 
                     {!isCurrent && (
