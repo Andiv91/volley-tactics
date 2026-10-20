@@ -1,6 +1,26 @@
 import { Request, Response } from 'express';
 import { memoryDb, isPrismaAvailable, prisma, saveStore } from '../db/prisma';
 
+function sortQuestionOptions<T extends { text: string }>(options: T[]): T[] {
+  if (!Array.isArray(options)) return [];
+  return [...options].sort((a, b) => {
+    const getPriority = (txt: string) => {
+      const t = (txt || '').toLowerCase();
+      if (t.includes('3-2-1')) return 1;
+      if (t.includes('3-1-2')) return 2;
+      if (t.includes('1-2-2-1') || t.includes('1-2-1-2')) return 3;
+      if (t.includes('2-2-2') || t.includes('2-1-2-1')) return 4;
+      return 99;
+    };
+    const pA = getPriority(a.text);
+    const pB = getPriority(b.text);
+    if (pA !== 99 || pB !== 99) {
+      return pA - pB;
+    }
+    return 0;
+  });
+}
+
 export const getQuestions = async (req: Request, res: Response) => {
   try {
     const { categoryId, difficulty, phase } = req.query;
@@ -19,7 +39,11 @@ export const getQuestions = async (req: Request, res: Response) => {
         },
         orderBy: { createdAt: 'desc' },
       });
-      return res.json({ questions });
+      const formattedQuestions = questions.map(q => ({
+        ...q,
+        options: sortQuestionOptions(q.options),
+      }));
+      return res.json({ questions: formattedQuestions });
     } else {
       let filtered = [...memoryDb.questions];
       if (categoryId) filtered = filtered.filter(q => q.categoryId === categoryId);
@@ -55,7 +79,12 @@ export const getQuestionById = async (req: Request, res: Response) => {
         },
       });
       if (!question) return res.status(404).json({ message: 'Pregunta no encontrada' });
-      return res.json({ question });
+      return res.json({
+        question: {
+          ...question,
+          options: sortQuestionOptions(question.options),
+        },
+      });
     } else {
       const question = memoryDb.questions.find(q => q.id === id);
       if (!question) return res.status(404).json({ message: 'Pregunta no encontrada' });

@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { TestDetail, Question } from '../types';
 import { MediaViewer } from '../components/media/MediaViewer';
 import { VolleyballLoader, VolleyballLogo } from '../components/ui/VolleyballLoader';
-import { formatQuestionComplexity } from '../utils/tacticsFormatters';
+import { formatQuestionComplexity, sortQuestionOptions } from '../utils/tacticsFormatters';
 import {
   Clock,
   ArrowRight,
@@ -242,7 +242,7 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
             )}
 
             <div className="grid grid-cols-1 gap-3">
-              {currentQuestion.options.map((option, idx) => {
+              {sortQuestionOptions(currentQuestion.options).map((option, idx) => {
                 const isSelected = selectedAnswers[currentQuestion.id] === option.id;
                 const letter = String.fromCharCode(65 + idx);
 

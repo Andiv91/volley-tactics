@@ -29,3 +29,23 @@ export function formatQuestionComplexity(difficulty?: string): {
     color: '#f59e0b',
   };
 }
+
+export function sortQuestionOptions<T extends { text: string }>(options: T[]): T[] {
+  if (!Array.isArray(options)) return [];
+  return [...options].sort((a, b) => {
+    const getPriority = (txt: string) => {
+      const t = (txt || '').toLowerCase();
+      if (t.includes('3-2-1')) return 1;
+      if (t.includes('3-1-2')) return 2;
+      if (t.includes('1-2-2-1') || t.includes('1-2-1-2')) return 3;
+      if (t.includes('2-2-2') || t.includes('2-1-2-1')) return 4;
+      return 99;
+    };
+    const pA = getPriority(a.text);
+    const pB = getPriority(b.text);
+    if (pA !== 99 || pB !== 99) {
+      return pA - pB;
+    }
+    return 0;
+  });
+}
