@@ -140,9 +140,9 @@ export const ResultsExplorer: React.FC = () => {
     try {
       const res = await api.getSubmissionById(submissionId);
       setAuditSubmission(res.submission);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error obteniendo detalle de auditoría:', err);
-      alert('No se pudo cargar el detalle de la entrega.');
+      alert(err?.message || 'No se pudo cargar el detalle de la entrega.');
     } finally {
       setLoadingAudit(false);
     }

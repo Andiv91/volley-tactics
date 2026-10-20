@@ -400,7 +400,9 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
     const user = req.user;
     if (!user) return res.status(401).json({ message: 'No autenticado' });
 
-    const isAdmin = user.role === 'ADMIN';
+    const isSuperAdmin = user.role === 'ADMIN';
+    const isCoach = user.role === 'COACH';
+    const isStaff = isSuperAdmin || isCoach;
 
     if (isPrismaAvailable && prisma) {
       const submission = await prisma.submission.findUnique({
@@ -433,8 +435,8 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
 
       if (!submission) return res.status(404).json({ message: 'Resultado no encontrado' });
 
-      // Check permission: only admin or the user who took the test can view
-      if (!isAdmin && submission.userId !== user.id) {
+      // Check permission: staff (admin o técnico) o el atleta dueño de la entrega
+      if (!isStaff && submission.userId !== user.id) {
         return res.status(403).json({ message: 'No tiene permiso para ver este resultado' });
       }
 
@@ -465,7 +467,7 @@ export const getSubmissionById = async (req: AuthRequest, res: Response) => {
       const submission = memoryDb.submissions.find(s => s.id === id);
       if (!submission) return res.status(404).json({ message: 'Resultado no encontrado' });
 
-      if (!isAdmin && submission.userId !== user.id) {
+      if (!isStaff && submission.userId !== user.id) {
         return res.status(403).json({ message: 'No tiene permiso para ver este resultado' });
       }
 
