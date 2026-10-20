@@ -75,6 +75,7 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
         categoryName: q.category?.name || 'General',
         selectedOptionId,
         selectedOptionText: selectedOpt ? selectedOpt.text : 'Sin respuesta',
+        selectedOptionImageUrl: selectedOpt ? selectedOpt.imageUrl : null,
         isCorrect,
         feedbackGiven: feedback,
         allOptions: q.options.map((opt: any) => ({

@@ -11,6 +11,10 @@ import {
   AlertCircle,
   ShieldCheck,
   Award,
+  Maximize2,
+  X,
+  ImageIcon,
+  Info,
 } from 'lucide-react';
 
 interface TestRunnerPageProps {
@@ -26,6 +30,7 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -209,9 +214,26 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
 
           {/* Options Selection */}
           <div className="space-y-3 pt-2">
-            <label className="block text-xs font-bold text-rose-200 uppercase tracking-wider">
-              Selecciona tu decisión táctica:
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-rose-200 uppercase tracking-wider">
+                Selecciona tu decisión táctica:
+              </label>
+              {currentQuestion.options.some((o) => !!o.imageUrl) && (
+                <span className="text-[11px] font-semibold text-amber-300 flex items-center gap-1 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  Incluye diagramas de cancha
+                </span>
+              )}
+            </div>
+
+            {currentQuestion.options.some((o) => !!o.imageUrl) && (
+              <div className="flex items-start gap-2 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs">
+                <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <span>
+                  Observa atentamente el esquema de rotación y cobertura de cada alternativa. Puedes pulsar <strong>"Ampliar"</strong> en cualquier diagrama para inspeccionar los jugadores y zonas en alta resolución.
+                </span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-3">
               {currentQuestion.options.map((option, idx) => {
@@ -242,13 +264,36 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
                         {option.text}
                       </span>
                       {option.imageUrl && (
-                        <div className="rounded-xl overflow-hidden border border-white/20 bg-stone-950/60 max-w-sm sm:max-w-md shadow-inner">
+                        <div className="mt-2 rounded-xl overflow-hidden border border-white/20 bg-stone-950/80 max-w-sm sm:max-w-md shadow-md">
                           <img
                             src={option.imageUrl}
                             alt={`Diagrama táctico opción ${letter}`}
-                            className="w-full h-auto max-h-60 object-contain p-2 hover:scale-[1.02] transition-transform duration-200"
-                            loading="lazy"
+                            className="w-full h-auto max-h-60 object-contain p-2 hover:scale-[1.01] transition-transform duration-200 bg-stone-900/40"
+                            loading="eager"
+                            onError={(e) => {
+                              console.warn(`Error al cargar diagrama táctico: ${option.imageUrl}`);
+                            }}
                           />
+                          <div className="px-3 py-1.5 bg-black/60 border-t border-white/10 flex items-center justify-between text-[11px] text-stone-300">
+                            <span className="font-semibold text-rose-300 flex items-center gap-1">
+                              <ImageIcon className="w-3 h-3" />
+                              Diagrama Táctico {letter}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setZoomedImage({
+                                  url: option.imageUrl!,
+                                  title: `Diagrama Táctico - Opción ${letter}: ${option.text}`,
+                                });
+                              }}
+                              className="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/30 text-white font-bold flex items-center gap-1 transition-colors"
+                            >
+                              <Maximize2 className="w-3 h-3" />
+                              <span>Ampliar</span>
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -293,6 +338,46 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* Lightbox / Zoom Modal for Tactical Diagrams */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-stone-900 border border-white/20 rounded-3xl p-5 shadow-2xl flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between pb-3 border-b border-white/10 mb-3">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-rose-400" />
+                <span>{zoomedImage.title}</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setZoomedImage(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-black text-sm transition-colors"
+                title="Cerrar vista previa"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="w-full max-h-[75vh] flex items-center justify-center overflow-auto rounded-2xl bg-black/70 p-3 border border-white/10">
+              <img
+                src={zoomedImage.url}
+                alt={zoomedImage.title}
+                className="max-w-full max-h-[70vh] object-contain rounded-xl"
+              />
+            </div>
+            <div className="mt-3 text-center">
+              <p className="text-[11px] text-stone-400">
+                Haz clic fuera de este cuadro o presiona la <strong>X</strong> para volver a responder la evaluación.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

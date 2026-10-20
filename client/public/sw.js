@@ -1,5 +1,5 @@
-// VoleiTactics Service Worker - Network-First Strategy
-const CACHE_NAME = 'voleitactics-cache-v5';
+// VoleiTactics Service Worker - Network-First Strategy with Instant Cache Buster
+const CACHE_NAME = 'voleitactics-cache-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -11,16 +11,24 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[SW] Purgando caché obsoleta:', key);
             return caches.delete(key);
           }
         })
       );
     })
   );
-  self.clients.claim();
+  return self.clients.claim();
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
+  // Never intercept API calls
   if (event.request.url.includes('/api/')) {
     return;
   }

@@ -45,8 +45,28 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then((reg) => {
             reg.update();
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('Nueva versión de VoleiTactics disponible. Actualizando caché...');
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+              }
+            });
           }).catch((err) => {
             console.log('SW registration error:', err);
+          });
+
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              console.log('Controlador de Service Worker actualizado. Recargando aplicación...');
+              window.location.reload();
+            }
           });
         });
       }

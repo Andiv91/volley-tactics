@@ -256,13 +256,22 @@ export const TestResultPage: React.FC<TestResultPageProps> = ({
                 )}
 
                 {/* User's Chosen Option */}
-                <div className="mt-3 p-3.5 rounded-2xl bg-black/40 border border-white/10">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-1">
+                <div className="mt-3 p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-2">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
                     Tu respuesta:
                   </span>
                   <p className="text-sm font-semibold text-white">
                     {userChoiceText}
                   </p>
+                  {(ans.selectedOption?.imageUrl || ans.selectedOptionImageUrl) && (
+                    <div className="rounded-xl overflow-hidden border border-white/20 bg-stone-950/80 max-w-sm mt-2">
+                      <img
+                        src={ans.selectedOption?.imageUrl || ans.selectedOptionImageUrl}
+                        alt="Esquema táctico seleccionado"
+                        className="w-full h-auto max-h-48 object-contain p-2"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* CRITICAL: Tailored Pedagogical Feedback Box */}
