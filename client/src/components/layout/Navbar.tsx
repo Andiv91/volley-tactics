@@ -24,7 +24,9 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
   const { user, logout, updateAvatar } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
+  const isSuperAdmin = user?.role === 'ADMIN';
+  const isCoach = user?.role === 'COACH';
+  const isStaff = isSuperAdmin || isCoach;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -106,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
           
           {/* Logo & Marca (Estático blanco, flex-shrink-0) */}
           <div
-            onClick={() => onTabChange(isAdmin ? 'admin-dashboard' : 'athlete-tests')}
+            onClick={() => onTabChange(isSuperAdmin ? 'admin-users' : isCoach ? 'admin-dashboard' : 'athlete-tests')}
             className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group select-none flex-shrink-0"
           >
             <VolleyballLogo size={38} spinning={false} className="flex-shrink-0" />
@@ -122,7 +124,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
 
           {/* Navegación para Escritorio */}
           <nav className="hidden lg:flex items-center space-x-1.5 xl:space-x-2 flex-shrink-0">
-            {isAdmin ? (
+            {isSuperAdmin && (
+              <button
+                onClick={() => onTabChange('admin-users')}
+                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex-shrink-0 ${
+                  currentTab === 'admin-users'
+                    ? 'bg-rose-600 text-white shadow-md ring-2 ring-white/50'
+                    : 'text-rose-200 hover:bg-white/10'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Usuarios</span>
+              </button>
+            )}
+
+            {isStaff ? (
               <>
                 <button
                   onClick={() => onTabChange('admin-dashboard')}
@@ -233,16 +249,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
                 <span className="text-xs font-extrabold text-white leading-tight truncate max-w-[120px] xl:max-w-[160px]">
                   {user?.name || 'Usuario'}
                 </span>
-                <span className="text-[10px] font-semibold text-amber-300 flex items-center justify-end gap-1 mt-0.5">
-                  {isAdmin ? (
+                <span className="text-[10px] font-bold flex items-center justify-end gap-1 mt-0.5">
+                  {isSuperAdmin ? (
+                    <>
+                      <ShieldCheck className="w-3 h-3 text-rose-400 flex-shrink-0" />
+                      <span className="text-rose-300">Administrador</span>
+                    </>
+                  ) : isCoach ? (
                     <>
                       <ShieldCheck className="w-3 h-3 text-amber-300 flex-shrink-0" />
-                      <span>Administrador</span>
+                      <span className="text-amber-300">Técnico</span>
                     </>
                   ) : (
                     <>
-                      <UserCheck className="w-3 h-3 text-rose-300 flex-shrink-0" />
-                      <span>Atleta</span>
+                      <UserCheck className="w-3 h-3 text-blue-300 flex-shrink-0" />
+                      <span className="text-blue-300">Estudiante</span>
                     </>
                   )}
                 </span>
@@ -314,7 +335,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
       {/* Menú Desplegable Responsivo para Móviles */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-[#520917] border-t border-white/10 px-4 py-3 space-y-2 animate-fadeIn">
-          {isAdmin ? (
+          {isSuperAdmin && (
+            <button
+              onClick={() => {
+                onTabChange('admin-users');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black ${
+                currentTab === 'admin-users' ? 'bg-rose-600 text-white shadow-md' : 'text-rose-200'
+              }`}
+            >
+              Gestión de Usuarios (Admin)
+            </button>
+          )}
+
+          {isStaff ? (
             <>
               <button
                 onClick={() => {

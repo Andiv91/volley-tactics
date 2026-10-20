@@ -8,7 +8,13 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   register: (data: { email: string; password: string; name: string; role?: UserRole }) => Promise<void>;
-  googleAuth: (payload: { credential?: string; demoUser?: any }) => Promise<void>;
+  googleAuth: (payload: {
+    credential?: string;
+    demoUser?: any;
+    mode?: 'login' | 'register';
+    role?: string;
+    name?: string;
+  }) => Promise<any>;
   logout: () => void;
   quickLoginDemo: (role: 'ADMIN' | 'USER') => Promise<void>;
   updateAvatar: (avatarUrl: string) => Promise<void>;
@@ -67,13 +73,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const googleAuth = async (payload: { credential?: string; demoUser?: any }) => {
+  const googleAuth = async (payload: {
+    credential?: string;
+    demoUser?: any;
+    mode?: 'login' | 'register';
+    role?: string;
+    name?: string;
+  }) => {
     setIsLoading(true);
     try {
       const res = await api.googleAuth(payload);
-      localStorage.setItem('volei_token', res.token);
-      setToken(res.token);
-      setUser(res.user);
+      if (res.token && res.user) {
+        localStorage.setItem('volei_token', res.token);
+        setToken(res.token);
+        setUser(res.user);
+      }
+      return res;
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const quickLoginDemo = async (role: 'ADMIN' | 'USER') => {
     if (role === 'ADMIN') {
-      await login({ email: 'admin@volleyball.edu', password: 'Admin123!' });
+      await login({ email: 'admin', password: 'Mkverse343' });
     } else {
       await login({ email: 'athlete@volleyball.edu', password: 'User123!' });
     }

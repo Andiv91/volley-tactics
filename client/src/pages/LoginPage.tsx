@@ -3,10 +3,10 @@ import { GoogleLogin } from '@react-oauth/google';
 import { VolleyballHeroBackground } from '../components/layout/VolleyballHeroBackground';
 import { VolleyballLogo, VolleyballLoader } from '../components/ui/VolleyballLoader';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, UserCheck, AlertCircle, ArrowRight } from 'lucide-react';
+import { ShieldCheck, UserCheck, AlertCircle, ArrowRight, UserX } from 'lucide-react';
 
 interface LoginPageProps {
-  onSwitchToRegister: () => void;
+  onSwitchToRegister: (googleProfile?: any) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
@@ -14,6 +14,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [unregisteredGoogle, setUnregisteredGoogle] = useState<{
+    email: string;
+    name: string;
+    avatarUrl?: string;
+    googleId?: string;
+    credential?: string;
+  } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,24 +43,59 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
       return;
     }
     try {
-      await googleAuth({ credential: credentialResponse.credential });
+      const res = await googleAuth({
+        credential: credentialResponse.credential,
+        mode: 'login',
+      });
+      if (res?.notRegistered) {
+        setUnregisteredGoogle(res.googleProfile || {
+          email: 'tu cuenta de Google',
+          credential: credentialResponse.credential,
+        });
+      }
     } catch (err: any) {
-      setError(err.message || 'Error al autenticar con Google');
+      if (
+        err.notRegistered ||
+        err.message?.includes('No se encontró ninguna cuenta') ||
+        err.message?.includes('Aún no tienes')
+      ) {
+        setUnregisteredGoogle(
+          err.googleProfile || {
+            email: 'tu cuenta de Google',
+            credential: credentialResponse.credential,
+          }
+        );
+      } else {
+        setError(err.message || 'Error al autenticar con Google');
+      }
     }
   };
 
   const handleDemoGoogle = async () => {
     setError(null);
     try {
-      await googleAuth({
+      const res = await googleAuth({
         demoUser: {
           email: 'atleta.google@universidad.edu',
           name: 'Atleta Google Universitario',
           picture: '/icons/icondefault.png',
         },
+        mode: 'login',
       });
+      if (res?.notRegistered) {
+        setUnregisteredGoogle(
+          res.googleProfile || {
+            email: 'atleta.google@universidad.edu',
+            name: 'Atleta Google Universitario',
+          }
+        );
+      }
     } catch (err: any) {
-      setError(err.message || 'Error con Google');
+      if (err.notRegistered) {
+        setUnregisteredGoogle(err.googleProfile);
+      } else {
+        setError(err.message || 'Error con Google');
+      }
     }
   };
 
@@ -280,7 +322,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         {/* Bottom Bar for Mobile */}
         <div className="sm:hidden text-center z-20 pt-4">
           <button
-            onClick={onSwitchToRegister}
+            onClick={() => onSwitchToRegister()}
             className="text-xs font-semibold text-rose-100 underline"
           >
             ¿No tienes cuenta? Regístrate aquí
@@ -288,6 +330,61 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         </div>
 
       </div>
+
+      {/* Modal / Pantalla: Cuenta de Google no registrada */}
+      {unregisteredGoogle && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="max-w-md w-full bg-stone-900 border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-rose-500/20 border border-rose-500/40 mx-auto flex items-center justify-center text-rose-400">
+              <UserX className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                Cuenta No Encontrada
+              </span>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                ¡Aún no tienes cuenta registrada!
+              </h3>
+              <p className="text-xs text-stone-300 leading-relaxed">
+                Intentaste acceder con la cuenta de Google <strong className="text-white font-mono">{unregisteredGoogle.email}</strong>, pero aún no está registrada en la plataforma.
+              </p>
+              <div className="text-xs text-rose-200/90 bg-rose-950/40 p-3 rounded-2xl border border-rose-500/30 text-left space-y-1">
+                <span className="font-bold text-white block">Para comenzar:</span>
+                <span>Debes crear tu cuenta y seleccionar si tu rol es <strong>Estudiante</strong> (por defecto) o <strong>Técnico</strong>.</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => onSwitchToRegister(unregisteredGoogle)}
+                className="w-full py-3 px-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-900/50 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <span>Registrarme con esta Cuenta de Google</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onSwitchToRegister()}
+                className="w-full py-2.5 px-4 rounded-full bg-white/10 hover:bg-white/20 text-stone-300 hover:text-white font-bold text-xs uppercase transition-colors"
+              >
+                Registrarme con correo y contraseña
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUnregisteredGoogle(null)}
+                className="text-xs text-stone-400 hover:text-stone-200 underline pt-1 block mx-auto"
+              >
+                Volver al inicio de sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </VolleyballHeroBackground>
   );
 };

@@ -12,6 +12,7 @@ import { QuestionManager } from './pages/admin/QuestionManager';
 import { TestManager } from './pages/admin/TestManager';
 import { ResultsExplorer } from './pages/admin/ResultsExplorer';
 import { AnalyticsPage } from './pages/admin/AnalyticsPage';
+import { UserManager } from './pages/admin/UserManager';
 import { Navbar } from './components/layout/Navbar';
 import { VolleyballLoader } from './components/ui/VolleyballLoader';
 import { VolleyballHeroBackground } from './components/layout/VolleyballHeroBackground';
@@ -69,27 +70,34 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 const AppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [pendingGoogleProfile, setPendingGoogleProfile] = useState<any | null>(null);
 
   // Navigation state
   const [currentTab, setCurrentTab] = useState<string>('athlete-tests');
   const [activeTestId, setActiveTestId] = useState<string | null>(null);
   const [activeSubmission, setActiveSubmission] = useState<any | null>(null);
 
-  const isAdmin = user?.role === 'ADMIN';
+  const isSuperAdmin = user?.role === 'ADMIN';
+  const isCoach = user?.role === 'COACH';
+  const isStaff = isSuperAdmin || isCoach;
 
   // Sincronizar inmediatamente la pestaña activa al iniciar sesión
   React.useEffect(() => {
     if (user) {
-      if (user.role === 'ADMIN' && !currentTab.startsWith('admin-')) {
+      if (user.role === 'ADMIN') {
+        setCurrentTab('admin-users');
+      } else if (user.role === 'COACH') {
         setCurrentTab('admin-dashboard');
-      } else if (user.role === 'USER' && !currentTab.startsWith('athlete-')) {
+      } else if (user.role === 'USER') {
         setCurrentTab('athlete-tests');
       }
     }
   }, [user?.role, user?.id]);
 
   // Asegurar pestaña por defecto en caso de cambio de rol
-  const activeTabName = isAdmin
+  const activeTabName = isSuperAdmin
+    ? (currentTab.startsWith('admin-') ? currentTab : 'admin-users')
+    : isCoach
     ? (currentTab.startsWith('admin-') ? currentTab : 'admin-dashboard')
     : (currentTab.startsWith('athlete-') ? currentTab : 'athlete-tests');
 
@@ -104,9 +112,24 @@ const AppContent: React.FC = () => {
   // Si no ha iniciado sesión -> Mostrar Login o Registro
   if (!user) {
     if (authView === 'register') {
-      return <RegisterPage onSwitchToLogin={() => setAuthView('login')} />;
+      return (
+        <RegisterPage
+          initialGoogleProfile={pendingGoogleProfile}
+          onSwitchToLogin={() => {
+            setPendingGoogleProfile(null);
+            setAuthView('login');
+          }}
+        />
+      );
     }
-    return <LoginPage onSwitchToRegister={() => setAuthView('register')} />;
+    return (
+      <LoginPage
+        onSwitchToRegister={(googleProfile) => {
+          setPendingGoogleProfile(googleProfile || null);
+          setAuthView('register');
+        }}
+      />
+    );
   }
 
   return (
@@ -136,8 +159,8 @@ const AppContent: React.FC = () => {
 
       {/* Page Content */}
       <main className="relative z-10 flex-grow pb-16">
-        {/* ATHLETE VIEWS */}
-        {!isAdmin && (
+        {/* ATHLETE / STUDENT VIEWS */}
+        {!isStaff && (
           <>
             {activeTestId ? (
               <TestRunnerPage
@@ -184,9 +207,12 @@ const AppContent: React.FC = () => {
           </>
         )}
 
-        {/* ADMIN VIEWS */}
-        {isAdmin && (
+        {/* STAFF (ADMIN & COACH) VIEWS */}
+        {isStaff && (
           <>
+            {/* Panel Maestro de Usuarios Exclusivo para Super Admin */}
+            {activeTabName === 'admin-users' && <UserManager />}
+
             {activeTabName === 'admin-dashboard' && (
               <AdminDashboard
                 onNavigate={(tab) => setCurrentTab(tab)}

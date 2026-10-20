@@ -7,7 +7,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: 'ADMIN' | 'USER';
+    role: 'ADMIN' | 'COACH' | 'USER' | string;
     name: string;
   };
 }
@@ -23,7 +23,7 @@ export const authenticateJwt = (req: AuthRequest, res: Response, next: NextFunct
     const decoded = jwt.verify(token, config.jwtSecret) as {
       id: string;
       email: string;
-      role: 'ADMIN' | 'USER';
+      role: 'ADMIN' | 'COACH' | 'USER' | string;
       name: string;
     };
     req.user = decoded;
@@ -33,9 +33,20 @@ export const authenticateJwt = (req: AuthRequest, res: Response, next: NextFunct
   }
 };
 
+// Permite acceso a Técnicos (COACH) y Administradores (ADMIN)
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'COACH')) {
+    return res.status(403).json({ message: 'Acceso denegado. Se requieren privilegios de Técnico o Administrador' });
+  }
+  next();
+};
+
+export const requireTechnicianOrAdmin = requireAdmin;
+
+// Exclusivo para el usuario Super Administrador
+export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.user || req.user.role !== 'ADMIN') {
-    return res.status(403).json({ message: 'Acceso denegado. Se requieren privilegios de Administrador / Entrenador' });
+    return res.status(403).json({ message: 'Acceso exclusivo del Administrador del sistema' });
   }
   next();
 };

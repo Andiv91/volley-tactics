@@ -19,7 +19,15 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: false, // allow embedding YouTube videos & external sports images
   crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false, // Prevents blank window issues with Google OAuth popups
 }));
+
+// Allow OAuth popups to communicate back to opener
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
+
 app.use(cors({
   origin: true,
   credentials: true,

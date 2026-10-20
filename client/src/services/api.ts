@@ -57,13 +57,31 @@ export const api = {
     return handleResponse<{ token: string; user: User }>(res);
   },
 
-  async googleAuth(payload: { credential?: string; demoUser?: any }) {
+  async googleAuth(payload: {
+    credential?: string;
+    demoUser?: any;
+    mode?: 'login' | 'register';
+    role?: string;
+    name?: string;
+  }) {
     const res = await fetch(`${API_BASE}/auth/google`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(payload),
     });
-    return handleResponse<{ token: string; user: User; message: string }>(res);
+    return handleResponse<{
+      token?: string;
+      user?: User;
+      message: string;
+      notRegistered?: boolean;
+      googleProfile?: {
+        email: string;
+        name: string;
+        avatarUrl?: string;
+        googleId?: string;
+        credential?: string;
+      };
+    }>(res);
   },
 
   async getMe() {
@@ -87,6 +105,47 @@ export const api = {
       headers: getHeaders(),
     });
     return handleResponse<{ users: User[] }>(res);
+  },
+
+  async createUser(data: {
+    name: string;
+    email: string;
+    password?: string;
+    role: string;
+    teamId?: string | null;
+  }) {
+    const res = await fetch(`${API_BASE}/auth/users`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ user: User; message: string }>(res);
+  },
+
+  async updateUser(
+    id: string,
+    data: {
+      name?: string;
+      email?: string;
+      password?: string;
+      role?: string;
+      teamId?: string | null;
+    }
+  ) {
+    const res = await fetch(`${API_BASE}/auth/users/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ user: User; message: string }>(res);
+  },
+
+  async deleteUser(id: string) {
+    const res = await fetch(`${API_BASE}/auth/users/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<{ message: string }>(res);
   },
 
   // Categories

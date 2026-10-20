@@ -40,7 +40,7 @@ export interface UserEntity {
   email: string;
   password?: string | null;
   name: string;
-  role: 'ADMIN' | 'USER';
+  role: 'ADMIN' | 'COACH' | 'USER' | string;
   avatarUrl?: string | null;
   googleId?: string | null;
   teamId?: string | null;
@@ -142,19 +142,30 @@ export interface SubmissionEntity {
 }
 
 // Seed Data
-const defaultPasswordHash = bcrypt.hashSync('Admin123!', 10);
+const defaultAdminPasswordHash = bcrypt.hashSync('Mkverse343', 10);
+const defaultCoachPasswordHash = bcrypt.hashSync('Coach123!', 10);
 const defaultAthletePasswordHash = bcrypt.hashSync('User123!', 10);
 
 export const memoryDb = {
   users: [
     {
       id: 'user-admin-1',
-      email: 'admin@volleyball.edu',
-      password: defaultPasswordHash,
-      name: 'Director Técnico Morales',
+      email: 'admin',
+      password: defaultAdminPasswordHash,
+      name: 'Administrador Master',
       role: 'ADMIN',
       avatarUrl: '/icons/icondefault.png',
       createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'user-coach-1',
+      email: 'tecnico@volleyball.edu',
+      password: defaultCoachPasswordHash,
+      name: 'Profesor Fundavoley (Técnico)',
+      role: 'COACH',
+      avatarUrl: '/icons/icondefault.png',
+      createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
       updatedAt: new Date().toISOString(),
     },
     {

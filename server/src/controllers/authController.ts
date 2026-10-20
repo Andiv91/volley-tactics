@@ -12,18 +12,31 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ message: 'Correo y contraseña requeridos' });
+      return res.status(400).json({ message: 'Usuario y contraseña requeridos' });
     }
 
+    const cleanInput = email.trim();
     let user: any = null;
 
     if (isPrismaAvailable && prisma) {
-      user = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() },
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: { equals: cleanInput, mode: 'insensitive' } },
+            { email: { equals: `${cleanInput.toLowerCase()}@volleyball.edu`, mode: 'insensitive' } },
+            { name: { equals: cleanInput, mode: 'insensitive' } },
+          ],
+        },
         include: { team: true },
       });
     } else {
-      const rawUser = memoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      const lower = cleanInput.toLowerCase();
+      const rawUser = memoryDb.users.find(
+        u =>
+          u.email.toLowerCase() === lower ||
+          u.email.toLowerCase() === `${lower}@volleyball.edu` ||
+          u.name.toLowerCase() === lower
+      );
       if (rawUser) {
         const team = (memoryDb.teams || []).find(t => t.id === rawUser.teamId);
         user = { ...rawUser, team: team || null };
@@ -31,12 +44,12 @@ export const login = async (req: Request, res: Response) => {
     }
 
     if (!user || !user.password) {
-      return res.status(401).json({ message: 'Credenciales inválidas. Por favor verifique el correo y contraseña.' });
+      return res.status(401).json({ message: 'Credenciales inválidas. Por favor verifique el usuario y la contraseña.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Credenciales inválidas. Por favor verifique el correo y contraseña.' });
+      return res.status(401).json({ message: 'Credenciales inválidas. Por favor verifique el usuario y la contraseña.' });
     }
 
     const token = jwt.sign(
@@ -65,7 +78,8 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const assignedRole: 'ADMIN' | 'USER' = role === 'ADMIN' ? 'ADMIN' : 'USER';
+    // Asignación explícita de rol: COACH (Técnico) o USER (Estudiante)
+    const assignedRole = role === 'ADMIN' || role === 'COACH' || role === 'TECNICO' ? 'COACH' : 'USER';
 
     // Check existing
     if (isPrismaAvailable && prisma) {
@@ -131,7 +145,7 @@ export const register = async (req: Request, res: Response) => {
 
 export const googleAuth = async (req: Request, res: Response) => {
   try {
-    const { credential, demoUser } = req.body;
+    const { credential, demoUser, mode, role } = req.body;
 
     let email = '';
     let name = '';
@@ -139,10 +153,9 @@ export const googleAuth = async (req: Request, res: Response) => {
     let googleId = '';
 
     if (demoUser) {
-      // 1-Click Quick Demo for Google Sign-in
       email = demoUser.email || 'atleta.google@universidad.edu';
       name = demoUser.name || 'Atleta Google Demo';
-      avatarUrl = demoUser.picture || 'https://lh3.googleusercontent.com/a/ACg8ocISample';
+      avatarUrl = demoUser.picture || '/icons/icondefault.png';
       googleId = 'google-demo-' + Date.now();
     } else if (credential) {
       try {
@@ -160,7 +173,6 @@ export const googleAuth = async (req: Request, res: Response) => {
           avatarUrl = payload.picture || '';
           googleId = payload.sub;
         } else {
-          // Decode payload if client ID not configured on backend
           const base64Url = credential.split('.')[1];
           const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
           const jsonPayload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
@@ -171,7 +183,21 @@ export const googleAuth = async (req: Request, res: Response) => {
         }
       } catch (tokenErr) {
         console.warn('Verificación token Google fallback:', tokenErr);
-        return res.status(400).json({ message: 'No se pudo verificar el token de Google' });
+        try {
+          const base64Url = credential.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+          if (jsonPayload && jsonPayload.email) {
+            email = jsonPayload.email.toLowerCase();
+            name = jsonPayload.name || 'Usuario Google';
+            avatarUrl = jsonPayload.picture || '';
+            googleId = jsonPayload.sub;
+          } else {
+            return res.status(400).json({ message: 'No se pudo verificar el token de Google' });
+          }
+        } catch {
+          return res.status(400).json({ message: 'No se pudo verificar el token de Google' });
+        }
       }
     } else {
       return res.status(400).json({ message: 'Falta credencial de Google' });
@@ -180,42 +206,81 @@ export const googleAuth = async (req: Request, res: Response) => {
     let user: any = null;
 
     if (isPrismaAvailable && prisma) {
-      user = await prisma.user.findUnique({ where: { email } });
-      if (!user) {
+      user = await prisma.user.findUnique({
+        where: { email },
+        include: { team: true },
+      });
+    } else {
+      const raw = memoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (raw) {
+        const team = (memoryDb.teams || []).find(t => t.id === raw.teamId);
+        user = { ...raw, team: team || null };
+      }
+    }
+
+    // 1. Si viene en modo LOGIN (o sin especificar modo de registro) y el usuario NO existe:
+    if (!user && mode !== 'register') {
+      return res.status(404).json({
+        notRegistered: true,
+        googleProfile: {
+          email,
+          name,
+          avatarUrl,
+          googleId,
+          credential,
+        },
+        message: `No se encontró ninguna cuenta registrada en Volleyball Tactics asociada a "${email}".`,
+      });
+    }
+
+    // 2. Si viene en modo REGISTRO y el usuario ya existe:
+    if (mode === 'register' && user) {
+      return res.status(400).json({
+        message: 'Ya existe una cuenta con este correo de Google. Por favor inicia sesión.',
+      });
+    }
+
+    // 3. Crear usuario (modo registro con Google):
+    if (!user) {
+      const assignedRole = role === 'ADMIN' || role === 'COACH' || role === 'TECNICO' ? 'COACH' : 'USER';
+      if (isPrismaAvailable && prisma) {
         user = await prisma.user.create({
           data: {
             email,
-            name,
-            role: 'USER',
+            name: (req.body.name || name).trim(),
+            role: assignedRole,
             avatarUrl: avatarUrl || '/icons/icondefault.png',
             googleId,
           },
+          include: { team: true },
         });
-      } else if (!user.googleId) {
+      } else {
+        user = {
+          id: `user-google-${Date.now()}`,
+          email,
+          name: (req.body.name || name).trim(),
+          role: assignedRole,
+          avatarUrl: avatarUrl || '/icons/icondefault.png',
+          googleId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          team: null,
+        };
+        memoryDb.users.push(user);
+        saveStore();
+      }
+    } else if (!user.googleId) {
+      // Vincular googleId si la cuenta ya existía
+      if (isPrismaAvailable && prisma) {
         user = await prisma.user.update({
           where: { id: user.id },
           data: {
             googleId,
             avatarUrl: user.avatarUrl || avatarUrl || '/icons/icondefault.png',
           },
+          include: { team: true },
         });
-      }
-    } else {
-      user = memoryDb.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!user) {
-        user = {
-          id: `user-google-${Date.now()}`,
-          email,
-          name,
-          role: 'USER',
-          avatarUrl: avatarUrl || '/icons/icondefault.png',
-          googleId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        memoryDb.users.push(user);
-        saveStore();
-      } else if (!user.googleId) {
+      } else {
         user.googleId = googleId;
         if (!user.avatarUrl) user.avatarUrl = avatarUrl || '/icons/icondefault.png';
         saveStore();
@@ -232,7 +297,7 @@ export const googleAuth = async (req: Request, res: Response) => {
     return res.json({
       token,
       user: userWithoutPassword,
-      message: `¡Autenticación con Google exitosa, ${user.name}!`,
+      message: `¡Bienvenido, ${user.name}!`,
     });
   } catch (error: any) {
     console.error('Error en autenticación Google:', error);
@@ -303,7 +368,7 @@ export const updateAvatar = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Imagen requerida' });
     }
 
-    // Validación de tamaño máximo 1MB (en base64 ~ 1.4MB de longitud de texto)
+    // Validación de tamaño máximo 1MB
     if (avatarUrl.startsWith('data:image/')) {
       const stringLength = avatarUrl.length - (avatarUrl.indexOf(',') + 1);
       const sizeInBytes = (stringLength * 3) / 4;
@@ -352,6 +417,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
           name: true,
           role: true,
           avatarUrl: true,
+          googleId: true,
           teamId: true,
           team: {
             select: { id: true, name: true },
@@ -373,5 +439,169 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
     }
   } catch (error) {
     return res.status(500).json({ message: 'Error listando usuarios' });
+  }
+};
+
+export const updateUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role, password, teamId } = req.body;
+
+    let updatedUser: any = null;
+
+    if (isPrismaAvailable && prisma) {
+      const existing = await prisma.user.findUnique({ where: { id } });
+      if (!existing) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      const updateData: any = {};
+      if (name) updateData.name = name.trim();
+      if (email) updateData.email = email.toLowerCase().trim();
+      if (role && ['USER', 'COACH', 'ADMIN'].includes(role)) {
+        updateData.role = role;
+      }
+      if (password && password.trim() !== '') {
+        updateData.password = await bcrypt.hash(password.trim(), 10);
+      }
+      if (teamId !== undefined) {
+        updateData.teamId = teamId || null;
+      }
+
+      updatedUser = await prisma.user.update({
+        where: { id },
+        data: updateData,
+        include: { team: true },
+      });
+    } else {
+      const user = memoryDb.users.find(u => u.id === id);
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      if (name) user.name = name.trim();
+      if (email) user.email = email.toLowerCase().trim();
+      if (role && ['USER', 'COACH', 'ADMIN'].includes(role)) {
+        user.role = role as any;
+      }
+      if (password && password.trim() !== '') {
+        user.password = await bcrypt.hash(password.trim(), 10);
+      }
+      if (teamId !== undefined) {
+        user.teamId = teamId || null;
+      }
+      user.updatedAt = new Date().toISOString();
+      saveStore();
+      const team = (memoryDb.teams || []).find(t => t.id === user.teamId);
+      updatedUser = { ...user, team: team || null };
+    }
+
+    const { password: _, ...userWithoutPassword } = updatedUser;
+    return res.json({
+      message: 'Usuario actualizado exitosamente',
+      user: userWithoutPassword,
+    });
+  } catch (error: any) {
+    console.error('Error actualizando usuario:', error);
+    return res.status(500).json({ message: 'Error interno al actualizar usuario' });
+  }
+};
+
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (isPrismaAvailable && prisma) {
+      const userToDelete = await prisma.user.findUnique({ where: { id } });
+      if (!userToDelete) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      if (userToDelete.email === 'admin') {
+        return res.status(400).json({ message: 'No es posible eliminar la cuenta principal de Administrador' });
+      }
+
+      await prisma.teamMember.deleteMany({ where: { userId: id } });
+      await prisma.user.delete({ where: { id } });
+    } else {
+      const idx = memoryDb.users.findIndex(u => u.id === id);
+      if (idx === -1) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      if (memoryDb.users[idx].email === 'admin') {
+        return res.status(400).json({ message: 'No es posible eliminar la cuenta principal de Administrador' });
+      }
+      memoryDb.users.splice(idx, 1);
+      memoryDb.teamMembers = (memoryDb.teamMembers || []).filter(tm => tm.userId !== id);
+      saveStore();
+    }
+
+    return res.json({ message: 'Usuario eliminado exitosamente' });
+  } catch (error: any) {
+    console.error('Error eliminando usuario:', error);
+    return res.status(500).json({ message: 'Error interno al eliminar usuario' });
+  }
+};
+
+export const createUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, email, password, role, teamId } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Nombre y correo son requeridos' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const assignedRole = ['USER', 'COACH', 'ADMIN'].includes(role) ? role : 'USER';
+    const rawPass = password && password.trim() !== '' ? password.trim() : 'User123!';
+    const hashedPassword = await bcrypt.hash(rawPass, 10);
+
+    let created: any = null;
+
+    if (isPrismaAvailable && prisma) {
+      const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      if (existing) {
+        return res.status(400).json({ message: 'Ya existe un usuario con este correo' });
+      }
+
+      created = await prisma.user.create({
+        data: {
+          name: name.trim(),
+          email: cleanEmail,
+          password: hashedPassword,
+          role: assignedRole,
+          teamId: teamId || null,
+          avatarUrl: '/icons/icondefault.png',
+        },
+        include: { team: true },
+      });
+    } else {
+      const existing = memoryDb.users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (existing) {
+        return res.status(400).json({ message: 'Ya existe un usuario con este correo' });
+      }
+
+      created = {
+        id: `user-${Date.now()}`,
+        name: name.trim(),
+        email: cleanEmail,
+        password: hashedPassword,
+        role: assignedRole,
+        teamId: teamId || null,
+        avatarUrl: '/icons/icondefault.png',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        team: null,
+      };
+      memoryDb.users.push(created);
+      saveStore();
+    }
+
+    const { password: _, ...userWithoutPassword } = created;
+    return res.status(201).json({
+      message: 'Usuario creado exitosamente',
+      user: userWithoutPassword,
+    });
+  } catch (error: any) {
+    console.error('Error creando usuario:', error);
+    return res.status(500).json({ message: 'Error interno al crear usuario' });
   }
 };
