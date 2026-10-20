@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Square,
   Flame,
+  Edit3,
 } from 'lucide-react';
 
 export const TestManager: React.FC = () => {
@@ -19,6 +20,7 @@ export const TestManager: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingTestId, setEditingTestId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form
@@ -48,6 +50,40 @@ export const TestManager: React.FC = () => {
     loadData();
   }, []);
 
+  const handleOpenCreate = () => {
+    setEditingTestId(null);
+    setTitle('');
+    setDescription('');
+    setPhase('TEORICO');
+    setDurationMinutes(15);
+    setPassingScore(70);
+    setScaleType('3_TIER');
+    setCompetentThreshold(60);
+    setProfessionalThreshold(85);
+    setSelectedQuestionIds([]);
+    setShowCreateModal(true);
+  };
+
+  const handleOpenEdit = async (testSummary: TestSummary) => {
+    try {
+      const res = await api.getTestById(testSummary.id);
+      const test = res.test;
+      setEditingTestId(test.id);
+      setTitle(test.title);
+      setDescription(test.description || '');
+      setPhase(test.phase || 'TEORICO');
+      setDurationMinutes(test.durationMinutes || 15);
+      setPassingScore(test.passingScore || 70);
+      setScaleType(test.scaleType === '4_TIER' ? '4_TIER' : '3_TIER');
+      setCompetentThreshold(test.competentThreshold ?? 60);
+      setProfessionalThreshold(test.professionalThreshold ?? 85);
+      setSelectedQuestionIds(test.questions.map((q) => q.id));
+      setShowCreateModal(true);
+    } catch (err: any) {
+      alert(err.message || 'Error al cargar detalles de la evaluación');
+    }
+  };
+
   const toggleQuestionSelect = (id: string) => {
     if (selectedQuestionIds.includes(id)) {
       setSelectedQuestionIds(selectedQuestionIds.filter((qId) => qId !== id));
@@ -56,7 +92,7 @@ export const TestManager: React.FC = () => {
     }
   };
 
-  const handleCreateTest = async (e: React.FormEvent) => {
+  const handleSaveTest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       alert('El título es requerido.');
@@ -69,28 +105,37 @@ export const TestManager: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await api.createTest({
-        title: title.trim(),
-        description: description.trim(),
-        phase,
-        durationMinutes: Number(durationMinutes),
-        passingScore: Number(passingScore),
-        scaleType,
-        competentThreshold: Number(competentThreshold),
-        professionalThreshold: Number(professionalThreshold),
-        questionIds: selectedQuestionIds,
-      });
+      if (editingTestId) {
+        await api.updateTest(editingTestId, {
+          title: title.trim(),
+          description: description.trim(),
+          phase,
+          durationMinutes: Number(durationMinutes),
+          passingScore: Number(passingScore),
+          scaleType,
+          competentThreshold: Number(competentThreshold),
+          professionalThreshold: Number(professionalThreshold),
+          questionIds: selectedQuestionIds,
+        });
+      } else {
+        await api.createTest({
+          title: title.trim(),
+          description: description.trim(),
+          phase,
+          durationMinutes: Number(durationMinutes),
+          passingScore: Number(passingScore),
+          scaleType,
+          competentThreshold: Number(competentThreshold),
+          professionalThreshold: Number(professionalThreshold),
+          questionIds: selectedQuestionIds,
+        });
+      }
 
-      setTitle('');
-      setDescription('');
-      setSelectedQuestionIds([]);
-      setScaleType('3_TIER');
-      setCompetentThreshold(60);
-      setProfessionalThreshold(85);
+      handleOpenCreate();
       setShowCreateModal(false);
       await loadData();
     } catch (err: any) {
-      alert(err.message || 'Error al crear la evaluación');
+      alert(err.message || 'Error al guardar la evaluación');
     } finally {
       setIsSubmitting(false);
     }
@@ -128,7 +173,7 @@ export const TestManager: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={handleOpenCreate}
           className="px-5 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg transition-all"
         >
           + Crear Nueva Evaluación
@@ -199,26 +244,36 @@ export const TestManager: React.FC = () => {
               <span className="text-[11px] text-stone-400">
                 {test.submissionCount} atletas evaluados
               </span>
-              <button
-                onClick={() => handleDeleteTest(test.id)}
-                className="p-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-rose-600/30 transition-all"
-                title="Eliminar test"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => handleOpenEdit(test)}
+                  className="px-2.5 py-1.5 rounded-lg text-rose-300 hover:text-white hover:bg-white/10 transition-all flex items-center space-x-1 text-xs font-bold"
+                  title="Editar test"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteTest(test.id)}
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-rose-600/20 transition-all"
+                  title="Eliminar test"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* CREATE TEST MODAL */}
+      {/* CREATE / EDIT TEST MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-2xl bg-stone-900 border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
             
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
               <h2 className="text-xl font-black text-white uppercase tracking-tight">
-                Crear Batería de Evaluación
+                {editingTestId ? 'Editar Batería de Evaluación' : 'Crear Batería de Evaluación'}
               </h2>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -228,7 +283,7 @@ export const TestManager: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateTest} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveTest} className="space-y-4 text-xs">
               <div>
                 <label className="block text-rose-200 font-bold uppercase mb-1">
                   Título de la Evaluación
@@ -494,7 +549,11 @@ export const TestManager: React.FC = () => {
                   disabled={isSubmitting}
                   className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-black uppercase tracking-wider shadow-lg"
                 >
-                  {isSubmitting ? 'Creando...' : 'Crear Evaluación'}
+                  {isSubmitting
+                    ? 'Guardando...'
+                    : editingTestId
+                    ? 'Guardar Cambios de Evaluación'
+                    : 'Crear Batería de Evaluación'}
                 </button>
               </div>
 

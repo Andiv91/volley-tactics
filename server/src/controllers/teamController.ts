@@ -7,6 +7,9 @@ export const getTeams = async (req: AuthRequest, res: Response) => {
     if (isPrismaAvailable && prisma) {
       const teams = await prisma.team.findMany({
         include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
           members: {
             select: {
               id: true,
@@ -16,30 +19,69 @@ export const getTeams = async (req: AuthRequest, res: Response) => {
               role: true,
             },
           },
+          teamMemberships: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatarUrl: true,
+                  role: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { name: 'asc' },
       });
 
-      const formatted = teams.map((t: any) => ({
-        id: t.id,
-        name: t.name,
-        description: t.description,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-        memberCount: t.members.length,
-        members: t.members,
-      }));
+      const formatted = teams.map((t: any) => {
+        const memberMap = new Map<string, any>();
+        for (const m of t.members) {
+          memberMap.set(m.id, m);
+        }
+        for (const tm of t.teamMemberships || []) {
+          if (tm.user) {
+            memberMap.set(tm.user.id, tm.user);
+          }
+        }
+        const allMembers = Array.from(memberMap.values());
+
+        return {
+          id: t.id,
+          name: t.name,
+          description: t.description,
+          createdById: t.createdById,
+          createdBy: t.createdBy,
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt,
+          memberCount: allMembers.length,
+          members: allMembers,
+        };
+      });
 
       return res.json({ teams: formatted });
     } else {
       const formatted = (memoryDb.teams || []).map((t) => {
-        const members = (memoryDb.users || [])
-          .filter((u) => u.teamId === t.id)
-          .map(({ password: _, ...u }) => u);
+        const directMembers = (memoryDb.users || []).filter((u) => u.teamId === t.id);
+        const tmUserIds = (memoryDb.teamMembers || []).filter(tm => tm.teamId === t.id).map(tm => tm.userId);
+        const tmUsers = (memoryDb.users || []).filter(u => tmUserIds.includes(u.id));
+
+        const memberMap = new Map<string, any>();
+        for (const m of [...directMembers, ...tmUsers]) {
+          const { password: _, ...clean } = m;
+          memberMap.set(clean.id, clean);
+        }
+        const allMembers = Array.from(memberMap.values());
+
+        const creator = (memoryDb.users || []).find(u => u.id === t.createdById);
+
         return {
           ...t,
-          memberCount: members.length,
-          members,
+          createdBy: creator ? { id: creator.id, name: creator.name, email: creator.email } : null,
+          memberCount: allMembers.length,
+          members: allMembers,
         };
       });
 
@@ -54,7 +96,7 @@ export const getTeams = async (req: AuthRequest, res: Response) => {
 export const createTeam = async (req: AuthRequest, res: Response) => {
   try {
     if (req.user?.role !== 'ADMIN') {
-      return res.status(403).json({ message: 'Solo administradores pueden crear equipos' });
+      return res.status(403).json({ message: 'Solo administradores o profesores pueden crear equipos' });
     }
 
     const { name, description } = req.body;
@@ -63,6 +105,7 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
     }
 
     const trimmedName = name.trim();
+    const createdById = req.user?.id || null;
 
     if (isPrismaAvailable && prisma) {
       const existing = await prisma.team.findUnique({
@@ -76,8 +119,12 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
         data: {
           name: trimmedName,
           description: description?.trim() || null,
+          createdById,
         },
         include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
           members: {
             select: { id: true, name: true, email: true, avatarUrl: true },
           },
@@ -104,6 +151,7 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
         id: 'team-' + Date.now(),
         name: trimmedName,
         description: description?.trim() || '',
+        createdById: createdById || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -124,6 +172,171 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Error al crear equipo:', error);
     return res.status(500).json({ message: 'Error interno al registrar el equipo' });
+  }
+};
+
+export const addStudentToTeam = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Solo administradores o profesores pueden gestionar integrantes' });
+    }
+
+    const { id: teamId } = req.params;
+    const { studentId } = req.body;
+
+    if (!teamId || !studentId) {
+      return res.status(400).json({ message: 'ID de equipo y de estudiante son requeridos' });
+    }
+
+    if (isPrismaAvailable && prisma) {
+      const team = await prisma.team.findUnique({ where: { id: teamId } });
+      if (!team) return res.status(404).json({ message: 'Equipo no encontrado' });
+
+      const student = await prisma.user.findUnique({ where: { id: studentId } });
+      if (!student) return res.status(404).json({ message: 'Estudiante no encontrado' });
+
+      // Add to team_members table
+      await prisma.teamMember.upsert({
+        where: {
+          teamId_userId: {
+            teamId,
+            userId: studentId,
+          },
+        },
+        create: {
+          teamId,
+          userId: studentId,
+        },
+        update: {},
+      });
+
+      // Also set primary teamId if student doesn't have one
+      if (!student.teamId) {
+        await prisma.user.update({
+          where: { id: studentId },
+          data: { teamId },
+        });
+      }
+
+      return res.json({ message: `¡${student.name} agregado al equipo ${team.name} exitosamente!` });
+    } else {
+      const team = (memoryDb.teams || []).find(t => t.id === teamId);
+      if (!team) return res.status(404).json({ message: 'Equipo no encontrado' });
+
+      const student = memoryDb.users.find(u => u.id === studentId);
+      if (!student) return res.status(404).json({ message: 'Estudiante no encontrado' });
+
+      if (!memoryDb.teamMembers) memoryDb.teamMembers = [];
+      if (!memoryDb.teamMembers.some(tm => tm.teamId === teamId && tm.userId === studentId)) {
+        memoryDb.teamMembers.push({
+          id: `tm-${Date.now()}`,
+          teamId,
+          userId: studentId,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      if (!student.teamId) {
+        student.teamId = teamId;
+      }
+      saveStore();
+
+      return res.json({ message: `¡${student.name} agregado al equipo ${team.name} exitosamente!` });
+    }
+  } catch (error) {
+    console.error('Error al agregar estudiante al equipo:', error);
+    return res.status(500).json({ message: 'Error interno al agregar estudiante al equipo' });
+  }
+};
+
+export const removeStudentFromTeam = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Solo administradores o profesores pueden gestionar integrantes' });
+    }
+
+    const { id: teamId, studentId } = req.params;
+
+    if (!teamId || !studentId) {
+      return res.status(400).json({ message: 'ID de equipo y de estudiante son requeridos' });
+    }
+
+    if (isPrismaAvailable && prisma) {
+      await prisma.teamMember.deleteMany({
+        where: {
+          teamId,
+          userId: studentId,
+        },
+      });
+
+      const student = await prisma.user.findUnique({
+        where: { id: studentId },
+        include: { teamMemberships: true },
+      });
+
+      if (student && student.teamId === teamId) {
+        const otherMembership = student.teamMemberships.find(tm => tm.teamId !== teamId);
+        await prisma.user.update({
+          where: { id: studentId },
+          data: { teamId: otherMembership ? otherMembership.teamId : null },
+        });
+      }
+
+      return res.json({ message: 'Estudiante retirado del equipo exitosamente' });
+    } else {
+      if (memoryDb.teamMembers) {
+        memoryDb.teamMembers = memoryDb.teamMembers.filter(
+          tm => !(tm.teamId === teamId && tm.userId === studentId)
+        );
+      }
+      const student = memoryDb.users.find(u => u.id === studentId);
+      if (student && student.teamId === teamId) {
+        student.teamId = null;
+      }
+      saveStore();
+      return res.json({ message: 'Estudiante retirado del equipo exitosamente' });
+    }
+  } catch (error) {
+    console.error('Error al retirar estudiante del equipo:', error);
+    return res.status(500).json({ message: 'Error interno al retirar estudiante' });
+  }
+};
+
+export const getAvailableStudents = async (req: AuthRequest, res: Response) => {
+  try {
+    if (isPrismaAvailable && prisma) {
+      const students = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          role: true,
+          teamId: true,
+          team: { select: { id: true, name: true } },
+          teamMemberships: {
+            select: {
+              teamId: true,
+              team: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      });
+      return res.json({ students });
+    } else {
+      const students = (memoryDb.users || []).map(({ password: _, ...u }) => {
+        const team = (memoryDb.teams || []).find(t => t.id === u.teamId);
+        return {
+          ...u,
+          team: team ? { id: team.id, name: team.name } : null,
+          teamMemberships: [],
+        };
+      });
+      return res.json({ students });
+    }
+  } catch (error) {
+    console.error('Error al listar estudiantes:', error);
+    return res.status(500).json({ message: 'Error interno al consultar estudiantes' });
   }
 };
 

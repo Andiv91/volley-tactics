@@ -148,16 +148,15 @@ async function seed() {
     },
     {
       title: '¿Qué sistema defensivo utiliza su equipo con mayor frecuencia según la disposición táctica en cancha?',
-      context: 'Sección C: Táctica Defensiva. Observa la distribución y rotación de los jugadores en la cancha.',
+      context: 'Sección C: Táctica Defensiva. Observa la distribución y rotación de los jugadores en los esquemas de cada opción.',
       difficulty: 'AVANZADO',
       phase: 'TEORICO',
-      imageUrl: '/posiciones/rotacion_cancha_ejemplo.jpg',
       categoryName: 'Sistemas Defensivos',
       options: [
-        { text: 'Defensa perimetral con bloqueo triple (Sistema 3-2-1)', isCorrect: true, feedbackMessage: 'Sistema 3-2-1: Tres jugadores al bloqueo en la red, dos defensores medios en las líneas y un zaguero central profundo.', scoreValue: 1 },
-        { text: 'Defensa con jugador adelantado / rotación defensiva (Sistema 3-1-2)', isCorrect: true, feedbackMessage: 'Sistema 3-1-2: Tres en el bloqueo, un jugador adelantado en zona 6 corta para fintas y dos zagueros en el fondo.', scoreValue: 1 },
-        { text: 'Defensa con 1 solo bloqueo y líneas escalonadas (Sistema 1-2-1-2 o 1-2-2-1)', isCorrect: true, feedbackMessage: 'Sistema 1-2-1-2 / 1-2-2-1: Bloqueo simple individual con líneas de apoyo escalonadas para cubrir diagonales y balones colocados.', scoreValue: 1 },
-        { text: 'Defensa con 2 bloqueos y coberturas medias (Sistema 2-1-2-1 o 2-2-2)', isCorrect: true, feedbackMessage: 'Sistema 2-1-2-1 / 2-2-2: Doble bloqueo en red, un apoyo intermedio y distribución en W invertida en zona zaguera.', scoreValue: 1 },
+        { text: 'Defensa perimetral con bloqueo triple (Sistema 3-2-1)', imageUrl: '/posiciones/14opciona-3-2-1.jpg', isCorrect: true, feedbackMessage: 'Sistema 3-2-1: Tres jugadores al bloqueo en la red, dos defensores medios en las líneas y un zaguero central profundo.', scoreValue: 1 },
+        { text: 'Defensa con jugador adelantado / rotación defensiva (Sistema 3-1-2)', imageUrl: '/posiciones/rotacion_cancha_ejemplo.jpg', isCorrect: true, feedbackMessage: 'Sistema 3-1-2: Tres en el bloqueo, un jugador adelantado en zona 6 corta para fintas y dos zagueros en el fondo.', scoreValue: 1 },
+        { text: 'Defensa con 1 solo bloqueo y líneas escalonadas (Sistema 1-2-1-2 o 1-2-2-1)', imageUrl: '/posiciones/opcionc-1-2-1-2.jpg', isCorrect: true, feedbackMessage: 'Sistema 1-2-1-2 / 1-2-2-1: Bloqueo simple individual con líneas de apoyo escalonadas para cubrir diagonales y balones colocados.', scoreValue: 1 },
+        { text: 'Defensa con 2 bloqueos y coberturas medias (Sistema 2-1-2-1 o 2-2-2)', imageUrl: '/posiciones/2-1-2-1.jpg', isCorrect: true, feedbackMessage: 'Sistema 2-1-2-1 / 2-2-2: Doble bloqueo en red, un apoyo intermedio y distribución en W invertida en zona zaguera.', scoreValue: 1 },
       ],
     },
   ];

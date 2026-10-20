@@ -178,6 +178,26 @@ export const api = {
     return handleResponse<{ test: any; message: string }>(res);
   },
 
+  async updateTest(id: string, data: {
+    title: string;
+    description?: string;
+    phase?: string;
+    durationMinutes?: number;
+    passingScore?: number;
+    scaleType?: string;
+    competentThreshold?: number;
+    professionalThreshold?: number;
+    questionIds?: string[];
+    isActive?: boolean;
+  }) {
+    const res = await fetch(`${API_BASE}/tests/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ test: any; message: string }>(res);
+  },
+
   async deleteTest(id: string) {
     const res = await fetch(`${API_BASE}/tests/${id}`, {
       method: 'DELETE',
@@ -239,6 +259,30 @@ export const api = {
 
   async deleteTeam(id: string) {
     const res = await fetch(`${API_BASE}/teams/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  async getAvailableStudents() {
+    const res = await fetch(`${API_BASE}/teams/students/available`, {
+      headers: getHeaders(),
+    });
+    return handleResponse<{ students: User[] }>(res);
+  },
+
+  async addTeamMember(teamId: string, studentId: string) {
+    const res = await fetch(`${API_BASE}/teams/${teamId}/members`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ studentId }),
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  async removeTeamMember(teamId: string, studentId: string) {
+    const res = await fetch(`${API_BASE}/teams/${teamId}/members/${studentId}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });

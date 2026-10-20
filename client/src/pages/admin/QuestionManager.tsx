@@ -40,7 +40,7 @@ export const QuestionManager: React.FC = () => {
 
   // Options with custom per-option feedback!
   const [options, setOptions] = useState<
-    { text: string; isCorrect: boolean; feedbackMessage: string }[]
+    { text: string; isCorrect: boolean; feedbackMessage: string; imageUrl?: string }[]
   >([
     {
       text: '',
@@ -323,6 +323,15 @@ export const QuestionManager: React.FC = () => {
                               <MessageSquareQuote className="w-3 h-3 text-rose-400 flex-shrink-0" />
                               <span className="italic">{opt.feedbackMessage}</span>
                             </p>
+                            {opt.imageUrl && (
+                              <div className="mt-1.5 rounded-lg overflow-hidden border border-white/20 bg-stone-950/70 max-w-[150px]">
+                                <img
+                                  src={opt.imageUrl}
+                                  alt="Diagrama opción"
+                                  className="w-full h-auto max-h-24 object-contain p-1"
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -543,6 +552,20 @@ export const QuestionManager: React.FC = () => {
                         placeholder="Explica qué consecuencias tácticas o de conducta tiene elegir esta opción..."
                         className="w-full px-3.5 py-1.5 rounded-xl bg-stone-800 border border-white/15 text-white text-xs h-14 resize-none"
                         required
+                      />
+                    </div>
+
+                    {/* Optional diagram for this option */}
+                    <div>
+                      <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
+                        Imagen o Diagrama para esta opción (Opcional):
+                      </span>
+                      <input
+                        type="text"
+                        value={opt.imageUrl || ''}
+                        onChange={(e) => handleOptionChange(index, 'imageUrl', e.target.value)}
+                        placeholder="Ej. /posiciones/mi-grafico.jpg"
+                        className="w-full px-3.5 py-1.5 rounded-xl bg-stone-900 border border-white/10 text-stone-200 text-xs"
                       />
                     </div>
                   </div>

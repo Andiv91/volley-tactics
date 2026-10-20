@@ -110,6 +110,7 @@ export const createQuestion = async (req: Request, res: Response) => {
           options: {
             create: options.map((opt: any) => ({
               text: opt.text.trim(),
+              imageUrl: opt.imageUrl ? opt.imageUrl.trim() : null,
               isCorrect: !!opt.isCorrect,
               feedbackMessage: opt.feedbackMessage || (opt.isCorrect ? '¡Respuesta correcta!' : 'Respuesta incorrecta.'),
               scoreValue: opt.scoreValue !== undefined ? Number(opt.scoreValue) : (opt.isCorrect ? 1 : 0),
@@ -128,6 +129,7 @@ export const createQuestion = async (req: Request, res: Response) => {
         id: `opt-${Date.now()}-${index}`,
         questionId: newQuestionId,
         text: opt.text.trim(),
+        imageUrl: opt.imageUrl ? opt.imageUrl.trim() : null,
         isCorrect: !!opt.isCorrect,
         feedbackMessage: opt.feedbackMessage || (opt.isCorrect ? '¡Respuesta correcta!' : 'Respuesta incorrecta.'),
         scoreValue: opt.scoreValue !== undefined ? Number(opt.scoreValue) : (opt.isCorrect ? 1 : 0),

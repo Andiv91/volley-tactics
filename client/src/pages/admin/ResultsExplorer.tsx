@@ -19,6 +19,8 @@ import {
   Trash2,
   ShieldCheck,
   Award,
+  UserPlus,
+  ArrowLeft,
 } from 'lucide-react';
 
 export const ResultsExplorer: React.FC = () => {
@@ -41,6 +43,10 @@ export const ResultsExplorer: React.FC = () => {
 
   // Team Management Modal
   const [showTeamModal, setShowTeamModal] = useState(false);
+  const [selectedTeamToManage, setSelectedTeamToManage] = useState<Team | null>(null);
+  const [availableStudents, setAvailableStudents] = useState<User[]>([]);
+  const [selectedStudentToAdd, setSelectedStudentToAdd] = useState('');
+  const [addingStudent, setAddingStudent] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamDesc, setNewTeamDesc] = useState('');
   const [creatingTeam, setCreatingTeam] = useState(false);
@@ -72,6 +78,59 @@ export const ResultsExplorer: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [selectedUserFilter, selectedTestFilter, selectedTeamFilter]);
+
+  const loadAvailableStudents = async () => {
+    try {
+      const res = await api.getAvailableStudents();
+      setAvailableStudents(res.students || []);
+    } catch (err) {
+      console.error('Error cargando estudiantes disponibles:', err);
+    }
+  };
+
+  const handleOpenTeamModal = async () => {
+    setSelectedTeamToManage(null);
+    setShowTeamModal(true);
+    await loadAvailableStudents();
+  };
+
+  const handleSelectTeamToManage = (team: Team) => {
+    setSelectedTeamToManage(team);
+    setSelectedStudentToAdd('');
+  };
+
+  const handleAddStudentToTeam = async () => {
+    if (!selectedTeamToManage || !selectedStudentToAdd) return;
+    setAddingStudent(true);
+    try {
+      await api.addTeamMember(selectedTeamToManage.id, selectedStudentToAdd);
+      const updatedTeams = await api.getTeams();
+      setTeams(updatedTeams.teams || []);
+      const refreshedTeam = (updatedTeams.teams || []).find((t) => t.id === selectedTeamToManage.id);
+      setSelectedTeamToManage(refreshedTeam || null);
+      setSelectedStudentToAdd('');
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Error al agregar estudiante al equipo');
+    } finally {
+      setAddingStudent(false);
+    }
+  };
+
+  const handleRemoveStudentFromTeam = async (studentId: string) => {
+    if (!selectedTeamToManage) return;
+    if (!confirm('¿Deseas desvincular a este estudiante del equipo?')) return;
+    try {
+      await api.removeTeamMember(selectedTeamToManage.id, studentId);
+      const updatedTeams = await api.getTeams();
+      setTeams(updatedTeams.teams || []);
+      const refreshedTeam = (updatedTeams.teams || []).find((t) => t.id === selectedTeamToManage.id);
+      setSelectedTeamToManage(refreshedTeam || null);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Error al remover estudiante del equipo');
+    }
+  };
 
   const handleOpenAudit = async (submissionId: string) => {
     setLoadingAudit(true);
@@ -122,6 +181,9 @@ export const ResultsExplorer: React.FC = () => {
       if (selectedTeamFilter === teamId) {
         setSelectedTeamFilter('');
       }
+      if (selectedTeamToManage?.id === teamId) {
+        setSelectedTeamToManage(null);
+      }
       const updatedTeams = await api.getTeams();
       setTeams(updatedTeams.teams || []);
       await loadData();
@@ -139,8 +201,11 @@ export const ResultsExplorer: React.FC = () => {
     if (selectedTestFilter && sub.testId !== selectedTestFilter && sub.test?.id !== selectedTestFilter) return false;
     if (selectedLevelFilter && sub.performanceLevel !== selectedLevelFilter) return false;
     if (selectedTeamFilter) {
-      const teamId = sub.user?.teamId || sub.user?.team?.id;
-      if (teamId !== selectedTeamFilter) return false;
+      const teamObj = teams.find((t) => t.id === selectedTeamFilter);
+      const memberIds = (teamObj?.members || []).map((m) => m.id);
+      const athleteId = sub.user?.id || sub.userId;
+      const isMember = memberIds.includes(athleteId) || sub.user?.teamId === selectedTeamFilter || sub.user?.team?.id === selectedTeamFilter;
+      if (!isMember) return false;
     }
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -158,12 +223,14 @@ export const ResultsExplorer: React.FC = () => {
 
   // Calculate Consolidated Team Metrics when a team is selected
   const selectedTeamObj = teams.find((t) => t.id === selectedTeamFilter);
+  const teamMemberIds = (selectedTeamObj?.members || []).map((m) => m.id);
   const teamSubmissions = selectedTeamFilter
-    ? submissions.filter((s) => (s.user?.teamId === selectedTeamFilter || s.user?.team?.id === selectedTeamFilter))
+    ? submissions.filter((s) => {
+        const uid = s.user?.id || s.userId;
+        return teamMemberIds.includes(uid) || s.user?.teamId === selectedTeamFilter || s.user?.team?.id === selectedTeamFilter;
+      })
     : [];
-  const teamMembers = selectedTeamFilter
-    ? users.filter((u) => (u.teamId === selectedTeamFilter || (u.team as any)?.id === selectedTeamFilter))
-    : [];
+  const teamMembers = selectedTeamObj?.members || [];
 
   const totalTeamEvaluations = teamSubmissions.length;
   const avgTeamScore = totalTeamEvaluations > 0
@@ -219,7 +286,7 @@ export const ResultsExplorer: React.FC = () => {
 
         {/* Botón para Crear y Gestionar Equipos */}
         <button
-          onClick={() => setShowTeamModal(true)}
+          onClick={handleOpenTeamModal}
           className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-white text-rose-900 hover:bg-rose-100 font-extrabold text-xs uppercase tracking-wider shadow-lg transition-all active:scale-95 self-start md:self-auto"
         >
           <Users className="w-4 h-4 text-rose-700" />
@@ -520,14 +587,16 @@ export const ResultsExplorer: React.FC = () => {
             <div className="flex items-start justify-between pb-4 border-b border-white/10">
               <div>
                 <span className="text-[10px] font-black uppercase text-rose-300 tracking-wider">
-                  Módulo de Auditoría
+                  Módulo de Auditoría & Grupos
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black text-white mt-0.5 flex items-center gap-2">
                   <Users className="w-6 h-6 text-rose-400" />
-                  <span>Crear y Administrar Equipos</span>
+                  <span>{selectedTeamToManage ? `Gestionar Grupo: ${selectedTeamToManage.name}` : 'Crear y Administrar Grupos'}</span>
                 </h2>
                 <p className="text-xs text-stone-300 mt-1">
-                  Registra nuevas escuadras para que los atletas puedan afiliarse y analizar sus resultados colectivos.
+                  {selectedTeamToManage
+                    ? 'Agrega cualquier estudiante existente o desvincula integrantes de este grupo deportivo.'
+                    : 'Crea grupos de estudiantes para cada profesor y audita sus resultados y porcentajes por separado.'}
                 </p>
               </div>
 
@@ -539,93 +608,206 @@ export const ResultsExplorer: React.FC = () => {
               </button>
             </div>
 
-            {/* Formulario de Creación de Equipo */}
-            <form onSubmit={handleCreateTeam} className="p-4 rounded-2xl bg-black/40 border border-white/15 space-y-3">
-              <h3 className="text-xs font-black uppercase text-rose-300 tracking-wider flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Nuevo Equipo Deportivo</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-stone-300 block mb-1">
-                    Nombre del Equipo *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newTeamName}
-                    onChange={(e) => setNewTeamName(e.target.value)}
-                    placeholder="Ej. Selección Femenina A"
-                    className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-white/15 text-white text-xs focus:ring-2 focus:ring-rose-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-stone-300 block mb-1">
-                    Descripción / Categoría
-                  </label>
-                  <input
-                    type="text"
-                    value={newTeamDesc}
-                    onChange={(e) => setNewTeamDesc(e.target.value)}
-                    placeholder="Ej. Titulares universitarios"
-                    className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-white/15 text-white text-xs focus:ring-2 focus:ring-rose-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-1">
+            {selectedTeamToManage ? (
+              /* DETALLE Y GESTIÓN DE INTEGRANTES DEL GRUPO */
+              <div className="space-y-5">
                 <button
-                  type="submit"
-                  disabled={creatingTeam}
-                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                  type="button"
+                  onClick={() => setSelectedTeamToManage(null)}
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-rose-300 hover:text-white transition-colors"
                 >
-                  {creatingTeam ? 'Guardando...' : 'Crear Equipo'}
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>← Volver al listado de grupos</span>
                 </button>
-              </div>
-            </form>
 
-            {/* Listado de Equipos Registrados */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase text-white tracking-wider">
-                Equipos Registrados ({teams.length})
-              </h3>
+                {/* Formulario para agregar estudiante existente */}
+                <div className="p-4 rounded-2xl bg-black/40 border border-white/15 space-y-3">
+                  <h3 className="text-xs font-black uppercase text-rose-300 tracking-wider flex items-center gap-1.5">
+                    <UserPlus className="w-4 h-4" />
+                    <span>Agregar Estudiante Existente al Grupo</span>
+                  </h3>
+                  <p className="text-[11px] text-stone-300">
+                    Puedes agregar a cualquier estudiante ya registrado en la plataforma a este grupo:
+                  </p>
 
-              {teams.length === 0 ? (
-                <p className="text-xs text-stone-400 italic">No hay equipos registrados aún.</p>
-              ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                  {teams.map((tm) => (
-                    <div
-                      key={tm.id}
-                      className="p-3 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-between hover:bg-black/50 transition-all"
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <select
+                      value={selectedStudentToAdd}
+                      onChange={(e) => setSelectedStudentToAdd(e.target.value)}
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-stone-900 border border-white/15 text-white text-xs font-semibold focus:ring-2 focus:ring-rose-500"
                     >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-xs font-bold text-white">{tm.name}</h4>
-                          <span className="text-[9px] font-black uppercase px-2 py-0.2 rounded-full bg-rose-600/30 text-rose-300 border border-rose-500/40">
-                            {tm.memberCount || 0} Atletas
-                          </span>
-                        </div>
-                        {tm.description && (
-                          <p className="text-[11px] text-stone-300 mt-0.5">{tm.description}</p>
-                        )}
-                      </div>
+                      <option value="">-- Seleccionar estudiante registrado --</option>
+                      {availableStudents
+                        .filter((st) => !selectedTeamToManage.members?.some((m) => m.id === st.id))
+                        .map((st) => (
+                          <option key={st.id} value={st.id}>
+                            {st.name} ({st.email})
+                          </option>
+                        ))}
+                    </select>
 
-                      <button
-                        onClick={() => handleDeleteTeam(tm.id, tm.name)}
-                        disabled={deletingTeamId === tm.id}
-                        className="p-2 rounded-xl hover:bg-rose-900/50 text-stone-400 hover:text-rose-300 transition-colors"
-                        title="Eliminar equipo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={handleAddStudentToTeam}
+                      disabled={!selectedStudentToAdd || addingStudent}
+                      className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center space-x-1.5"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>{addingStudent ? 'Agregando...' : 'Agregar al Grupo'}</span>
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Listado de integrantes actuales */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black uppercase text-white tracking-wider flex items-center justify-between">
+                    <span>Integrantes Actuales ({selectedTeamToManage.members?.length || 0})</span>
+                    <span className="text-[11px] text-stone-400 font-normal">
+                      Creado por: {selectedTeamToManage.createdBy?.name || 'Profesor'}
+                    </span>
+                  </h3>
+
+                  {(!selectedTeamToManage.members || selectedTeamToManage.members.length === 0) ? (
+                    <div className="p-6 rounded-2xl bg-black/20 border border-white/10 text-center text-xs text-stone-400">
+                      Este grupo aún no tiene estudiantes asignados. Selecciona uno en el buscador superior para agregarlo.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {selectedTeamToManage.members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="p-3 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-between hover:bg-black/50 transition-all"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-rose-600/30 text-rose-300 border border-rose-500/40 flex items-center justify-center font-bold text-xs">
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-white">{member.name}</h4>
+                              <p className="text-[10px] text-stone-400">{member.email}</p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleRemoveStudentFromTeam(member.id)}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-rose-950/40 transition-colors"
+                            title="Desvincular del grupo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* LISTADO DE GRUPOS Y CREACIÓN */
+              <>
+                {/* Formulario de Creación de Equipo */}
+                <form onSubmit={handleCreateTeam} className="p-4 rounded-2xl bg-black/40 border border-white/15 space-y-3">
+                  <h3 className="text-xs font-black uppercase text-rose-300 tracking-wider flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Nuevo Grupo de Estudiantes</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-300 block mb-1">
+                        Nombre del Grupo *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newTeamName}
+                        onChange={(e) => setNewTeamName(e.target.value)}
+                        placeholder="Ej. Grupo Táctico Prof. Fredy"
+                        className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-white/15 text-white text-xs focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-300 block mb-1">
+                        Descripción / Categoría
+                      </label>
+                      <input
+                        type="text"
+                        value={newTeamDesc}
+                        onChange={(e) => setNewTeamDesc(e.target.value)}
+                        placeholder="Ej. Estudiantes K1 Tarde"
+                        className="w-full px-3 py-2 rounded-xl bg-stone-900 border border-white/15 text-white text-xs focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={creatingTeam}
+                      className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                    >
+                      {creatingTeam ? 'Guardando...' : 'Crear Grupo'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Listado de Equipos Registrados */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black uppercase text-white tracking-wider">
+                    Grupos Registrados ({teams.length})
+                  </h3>
+
+                  {teams.length === 0 ? (
+                    <p className="text-xs text-stone-400 italic">No hay grupos registrados aún.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {teams.map((tm) => (
+                        <div
+                          key={tm.id}
+                          className="p-3.5 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-between hover:bg-black/50 transition-all"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-bold text-white">{tm.name}</h4>
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-600/30 text-rose-300 border border-rose-500/40">
+                                {tm.memberCount || 0} Integrantes
+                              </span>
+                              {tm.createdBy?.name && (
+                                <span className="text-[9px] text-stone-400">
+                                  (Prof. {tm.createdBy.name})
+                                </span>
+                              )}
+                            </div>
+                            {tm.description && (
+                              <p className="text-[11px] text-stone-300 mt-0.5">{tm.description}</p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              onClick={() => handleSelectTeamToManage(tm)}
+                              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-rose-600 text-stone-200 hover:text-white text-xs font-bold transition-all flex items-center space-x-1"
+                              title="Gestionar estudiantes de este grupo"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                              <span>Estudiantes</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTeam(tm.id, tm.name)}
+                              disabled={deletingTeamId === tm.id}
+                              className="p-2 rounded-xl hover:bg-rose-900/50 text-stone-400 hover:text-rose-300 transition-colors"
+                              title="Eliminar grupo"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="pt-4 border-t border-white/10 flex justify-end">
               <button
@@ -715,11 +897,20 @@ export const ResultsExplorer: React.FC = () => {
                     )}
 
                     {/* Option Chosen */}
-                    <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-xs mb-2">
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/10 text-xs mb-2">
                       <span className="text-[10px] font-bold text-stone-400 block uppercase">
                         Opción seleccionada por el atleta:
                       </span>
                       <p className="font-semibold text-white mt-0.5">{choiceText}</p>
+                      {(ans.selectedOption?.imageUrl || ans.imageUrl) && (
+                        <div className="mt-2.5 rounded-xl overflow-hidden border border-white/20 bg-stone-950/80 max-w-sm">
+                          <img
+                            src={ans.selectedOption?.imageUrl || ans.imageUrl}
+                            alt="Diagrama táctico seleccionado"
+                            className="w-full h-auto max-h-52 object-contain p-2"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Feedback Given */}

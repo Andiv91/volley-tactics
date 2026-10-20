@@ -80,6 +80,7 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
         allOptions: q.options.map((opt: any) => ({
           id: opt.id,
           text: opt.text,
+          imageUrl: opt.imageUrl,
           isCorrect: opt.isCorrect,
           feedbackMessage: opt.feedbackMessage,
         })),
@@ -205,7 +206,18 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
       }
       if (testId) where.testId = String(testId);
       if (teamId) {
-        where.user = { teamId: String(teamId) };
+        const teamMembers = await prisma.teamMember.findMany({
+          where: { teamId: String(teamId) },
+          select: { userId: true },
+        });
+        const directUsers = await prisma.user.findMany({
+          where: { teamId: String(teamId) },
+          select: { id: true },
+        });
+        const memberIds = Array.from(
+          new Set([...teamMembers.map(tm => tm.userId), ...directUsers.map(u => u.id)])
+        );
+        where.userId = { in: memberIds };
       }
 
       const submissions = await prisma.submission.findMany({
@@ -275,10 +287,10 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
         list = list.filter(s => s.testId === testId);
       }
       if (teamId) {
-        list = list.filter(s => {
-          const u = memoryDb.users.find(item => item.id === s.userId);
-          return u?.teamId === teamId;
-        });
+        const directUserIds = memoryDb.users.filter(u => u.teamId === teamId).map(u => u.id);
+        const tmUserIds = (memoryDb.teamMembers || []).filter(tm => tm.teamId === teamId).map(tm => tm.userId);
+        const memberIds = new Set([...directUserIds, ...tmUserIds]);
+        list = list.filter(s => memberIds.has(s.userId));
       }
 
       const formatted = list.map(s => {

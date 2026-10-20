@@ -237,9 +237,21 @@ export const TestRunnerPage: React.FC<TestRunnerPageProps> = ({ testId, onFinish
                       {letter}
                     </span>
 
-                    <span className="text-sm font-medium leading-snug pt-0.5">
-                      {option.text}
-                    </span>
+                    <div className="flex-1 space-y-2.5 pt-0.5">
+                      <span className="text-sm font-medium leading-snug block">
+                        {option.text}
+                      </span>
+                      {option.imageUrl && (
+                        <div className="rounded-xl overflow-hidden border border-white/20 bg-stone-950/60 max-w-sm sm:max-w-md shadow-inner">
+                          <img
+                            src={option.imageUrl}
+                            alt={`Diagrama táctico opción ${letter}`}
+                            className="w-full h-auto max-h-60 object-contain p-2 hover:scale-[1.02] transition-transform duration-200"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </button>
                 );
               })}

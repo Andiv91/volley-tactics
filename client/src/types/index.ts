@@ -4,6 +4,8 @@ export interface Team {
   id: string;
   name: string;
   description?: string;
+  createdById?: string | null;
+  createdBy?: { id: string; name: string; email: string } | null;
   memberCount?: number;
   members?: User[];
   stats?: {
@@ -16,6 +18,10 @@ export interface Team {
       principiante: number;
       competente: number;
       profesional: number;
+      excelente?: number;
+      bueno?: number;
+      regular?: number;
+      malo?: number;
     };
   };
   createdAt?: string;
@@ -48,6 +54,7 @@ export interface Option {
   id: string;
   questionId?: string;
   text: string;
+  imageUrl?: string | null;
   isCorrect?: boolean;
   feedbackMessage: string;
   scoreValue?: number;

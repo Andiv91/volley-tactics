@@ -8,31 +8,48 @@ generator client {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  password    String?
-  name        String
-  role        String       @default("USER") // "ADMIN" | "USER"
-  avatarUrl   String?
-  googleId    String?
-  teamId      String?
-  team        Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  submissions Submission[]
+  id              String         @id @default(uuid())
+  email           String         @unique
+  password        String?
+  name            String
+  role            String         @default("USER") // "ADMIN" | "USER"
+  avatarUrl       String?
+  googleId        String?
+  teamId          String?
+  team            Team?          @relation("TeamUsers", fields: [teamId], references: [id], onDelete: SetNull)
+  createdTeams    Team[]         @relation("TeamCreator")
+  teamMemberships TeamMember[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  submissions     Submission[]
 
   @@map("users")
 }
 
 model Team {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  members     User[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String         @id @default(uuid())
+  name            String         @unique
+  description     String?
+  createdById     String?
+  createdBy       User?          @relation("TeamCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  members         User[]         @relation("TeamUsers")
+  teamMemberships TeamMember[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@map("team_members")
 }
 
 model Category {
@@ -70,6 +87,7 @@ model QuestionOption {
   questionId        String
   question          Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
   text              String
+  imageUrl          String?
   isCorrect         Boolean            @default(false)
   feedbackMessage   String // Pedagogical feedback explaining why this option is right/wrong/tactically sound
   scoreValue        Int                @default(1)

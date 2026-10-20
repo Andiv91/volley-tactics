@@ -124,6 +124,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
         options: tq.question.options.map(opt => ({
           id: opt.id,
           text: opt.text,
+          imageUrl: opt.imageUrl,
           ...(isAdmin ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
         })),
       }));
@@ -164,6 +165,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
             options: q.options.map(opt => ({
               id: opt.id,
               text: opt.text,
+              imageUrl: opt.imageUrl,
               ...(isAdmin ? { isCorrect: opt.isCorrect, feedbackMessage: opt.feedbackMessage } : {}),
             })),
           };
@@ -251,6 +253,86 @@ export const createTest = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al crear test:', error);
     return res.status(500).json({ message: 'Error interno al crear evaluación' });
+  }
+};
+
+export const updateTest = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      phase,
+      durationMinutes,
+      passingScore,
+      scaleType = '3_TIER',
+      competentThreshold,
+      professionalThreshold,
+      questionIds,
+      isActive,
+    } = req.body;
+
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ message: 'El título es requerido' });
+    }
+
+    const normalizedScale = scaleType === '4_TIER' ? '4_TIER' : '3_TIER';
+    const compThresh = Math.max(1, Math.min(98, Number(competentThreshold) || 60));
+    const profThresh = Math.max(compThresh + 1, Math.min(100, Number(professionalThreshold) || 85));
+
+    if (isPrismaAvailable && prisma) {
+      if (Array.isArray(questionIds) && questionIds.length > 0) {
+        await prisma.testQuestion.deleteMany({ where: { testId: id } });
+        await prisma.testQuestion.createMany({
+          data: questionIds.map((qId: string, index: number) => ({
+            testId: id,
+            questionId: qId,
+            orderIndex: index,
+          })),
+        });
+      }
+
+      const updated = await prisma.test.update({
+        where: { id },
+        data: {
+          title: title.trim(),
+          description: description !== undefined ? description : undefined,
+          phase: phase || undefined,
+          durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,
+          passingScore: passingScore !== undefined ? Number(passingScore) : undefined,
+          scaleType: normalizedScale,
+          competentThreshold: compThresh,
+          professionalThreshold: profThresh,
+          isActive: isActive !== undefined ? !!isActive : undefined,
+        },
+      });
+
+      return res.json({ test: updated, message: 'Evaluación actualizada con éxito' });
+    } else {
+      const idx = memoryDb.tests.findIndex(t => t.id === id);
+      if (idx === -1) return res.status(404).json({ message: 'Evaluación no encontrada' });
+
+      memoryDb.tests[idx] = {
+        ...memoryDb.tests[idx],
+        title: title.trim(),
+        description: description !== undefined ? description : memoryDb.tests[idx].description,
+        phase: phase || memoryDb.tests[idx].phase,
+        durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : memoryDb.tests[idx].durationMinutes,
+        passingScore: passingScore !== undefined ? Number(passingScore) : memoryDb.tests[idx].passingScore,
+        scaleType: normalizedScale,
+        competentThreshold: compThresh,
+        professionalThreshold: profThresh,
+        isActive: isActive !== undefined ? !!isActive : memoryDb.tests[idx].isActive,
+        questionIds: Array.isArray(questionIds) && questionIds.length > 0 ? questionIds : memoryDb.tests[idx].questionIds,
+        updatedAt: new Date().toISOString(),
+      };
+      saveStore();
+
+      return res.json({ test: memoryDb.tests[idx], message: 'Evaluación actualizada con éxito' });
+    }
+  } catch (error) {
+    console.error('Error al actualizar test:', error);
+    return res.status(500).json({ message: 'Error interno al actualizar evaluación' });
   }
 };
 

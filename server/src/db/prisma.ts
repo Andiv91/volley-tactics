@@ -53,8 +53,16 @@ export interface TeamEntity {
   id: string;
   name: string;
   description?: string;
+  createdById?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TeamMemberEntity {
+  id: string;
+  teamId: string;
+  userId: string;
+  createdAt: string;
 }
 
 export interface CategoryEntity {
@@ -69,6 +77,7 @@ export interface OptionEntity {
   id: string;
   questionId: string;
   text: string;
+  imageUrl?: string | null;
   isCorrect: boolean;
   feedbackMessage: string;
   scoreValue: number;
@@ -206,6 +215,8 @@ export const memoryDb = {
       updatedAt: new Date().toISOString(),
     },
   ] as TeamEntity[],
+
+  teamMembers: [] as TeamMemberEntity[],
 
   categories: [
     {

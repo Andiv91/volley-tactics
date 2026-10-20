@@ -20,7 +20,18 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       if (targetUserId) {
         whereClause.userId = targetUserId;
       } else if (targetTeamId) {
-        whereClause.user = { teamId: targetTeamId };
+        const teamMembers = await prisma.teamMember.findMany({
+          where: { teamId: targetTeamId },
+          select: { userId: true },
+        });
+        const directUsers = await prisma.user.findMany({
+          where: { teamId: targetTeamId },
+          select: { id: true },
+        });
+        const memberIds = Array.from(
+          new Set([...teamMembers.map(tm => tm.userId), ...directUsers.map(u => u.id)])
+        );
+        whereClause.userId = { in: memberIds };
       }
 
       allSubmissions = await prisma.submission.findMany({
@@ -50,8 +61,10 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       allSubmissions = memoryDb.submissions.filter(s => {
         if (targetUserId) return s.userId === targetUserId;
         if (targetTeamId) {
-          const u = memoryDb.users.find(item => item.id === s.userId);
-          return u?.teamId === targetTeamId;
+          const directUserIds = memoryDb.users.filter(u => u.teamId === targetTeamId).map(u => u.id);
+          const tmUserIds = (memoryDb.teamMembers || []).filter(tm => tm.teamId === targetTeamId).map(tm => tm.userId);
+          const memberIds = new Set([...directUserIds, ...tmUserIds]);
+          return memberIds.has(s.userId);
         }
         return true;
       });
@@ -158,9 +171,17 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       const avgTeamPct = totalTeamSubs > 0
         ? Math.round(teamSubs.reduce((acc, s) => acc + s.percentage, 0) / totalTeamSubs)
         : 0;
-      let performanceLevel: 'PRINCIPIANTE' | 'COMPETENTE' | 'PROFESIONAL' = 'PRINCIPIANTE';
-      if (avgTeamPct >= 85) performanceLevel = 'PROFESIONAL';
-      else if (avgTeamPct >= 60) performanceLevel = 'COMPETENTE';
+      const has4Tier = teamSubs.some(s => ['EXCELENTE', 'BUENO', 'REGULAR', 'MALO'].includes(s.performanceLevel));
+      let performanceLevel: string = 'PRINCIPIANTE';
+      if (has4Tier) {
+        if (avgTeamPct >= 75) performanceLevel = 'EXCELENTE';
+        else if (avgTeamPct >= 50) performanceLevel = 'BUENO';
+        else if (avgTeamPct >= 25) performanceLevel = 'REGULAR';
+        else performanceLevel = 'MALO';
+      } else {
+        if (avgTeamPct >= 85) performanceLevel = 'PROFESIONAL';
+        else if (avgTeamPct >= 60) performanceLevel = 'COMPETENTE';
+      }
 
       const teamMembers = allUsers.filter(u => u.teamId === targetTeamId);
 
@@ -176,6 +197,10 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
           principiante: teamSubs.filter(s => s.performanceLevel === 'PRINCIPIANTE').length,
           competente: teamSubs.filter(s => s.performanceLevel === 'COMPETENTE').length,
           profesional: teamSubs.filter(s => s.performanceLevel === 'PROFESIONAL').length,
+          excelente: teamSubs.filter(s => s.performanceLevel === 'EXCELENTE').length,
+          bueno: teamSubs.filter(s => s.performanceLevel === 'BUENO').length,
+          regular: teamSubs.filter(s => s.performanceLevel === 'REGULAR').length,
+          malo: teamSubs.filter(s => s.performanceLevel === 'MALO').length,
         },
       };
     }
